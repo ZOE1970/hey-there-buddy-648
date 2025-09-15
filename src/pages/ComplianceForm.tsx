@@ -4,24 +4,59 @@ import { toast } from "@/hooks/use-toast";
 
 // Form Section Components
 import GeneralInfoSection from "@/components/form-sections/GeneralInfoSection";
-import DataProcessingSection from "@/components/form-sections/DataProcessingSection";
+import BasicInfoSection from "@/components/form-sections/BasicInfoSection";
+import VendorInfoSection from "@/components/form-sections/VendorInfoSection";
+import ComplianceIntroSection from "@/components/form-sections/ComplianceIntroSection";
+import LegalContractualSection from "@/components/form-sections/LegalContractualSection";
+import GovernanceAccountabilitySection from "@/components/form-sections/GovernanceAccountabilitySection";
 import SecurityMeasuresSection from "@/components/form-sections/SecurityMeasuresSection";
+import DataSubjectRightsSection from "@/components/form-sections/DataSubjectRightsSection";
+import DataBreachSection from "@/components/form-sections/DataBreachSection";
+import CrossBorderSection from "@/components/form-sections/CrossBorderSection";
+import MonitoringOversightSection from "@/components/form-sections/MonitoringOversightSection";
+import ExitTerminationSection from "@/components/form-sections/ExitTerminationSection";
+import UniversityAssessmentSection from "@/components/form-sections/UniversityAssessmentSection";
+import ApprovalSection from "@/components/form-sections/ApprovalSection";
 
 const ComplianceForm = () => {
   const navigate = useNavigate();
 
   const formSections = [
     {
-      id: "general_info",
-      title: "General Information",
-      description: "Basic information about your organization and the service being evaluated.",
+      id: "email_collection",
+      title: "Email Collection",
+      description: "This form is collecting emails for vendor compliance tracking.",
       component: GeneralInfoSection
     },
     {
-      id: "data_processing",
-      title: "Data Processing",
-      description: "Details about how personal data is collected, processed, and stored.",
-      component: DataProcessingSection
+      id: "basic_info",
+      title: "Basic Information", 
+      description: "Vendor/Third Party Name, Service/Product, and Date",
+      component: BasicInfoSection
+    },
+    {
+      id: "vendor_info",
+      title: "Vendor Information",
+      description: "Detailed vendor information including contact details and data processing scope.",
+      component: VendorInfoSection
+    },
+    {
+      id: "compliance_intro",
+      title: "Vendor Compliance Checklist",
+      description: "Introduction to the compliance assessment checklist.",
+      component: ComplianceIntroSection
+    },
+    {
+      id: "legal_contractual",
+      title: "Legal & Contractual Requirements",
+      description: "Assessment of legal agreements and contractual obligations.",
+      component: LegalContractualSection
+    },
+    {
+      id: "governance_accountability",
+      title: "Governance & Accountability",
+      description: "Data protection governance structures and accountability measures.",
+      component: GovernanceAccountabilitySection
     },
     {
       id: "security_measures",
@@ -29,7 +64,48 @@ const ComplianceForm = () => {
       description: "Technical and organizational security measures implemented.",
       component: SecurityMeasuresSection
     },
-    // Additional sections would be added here for the full 14-section form
+    {
+      id: "data_subject_rights",
+      title: "Data Subject Rights",
+      description: "Support for data subject access, correction, erasure and other rights.",
+      component: DataSubjectRightsSection
+    },
+    {
+      id: "data_breach_management",
+      title: "Data Breach Management",
+      description: "Incident response plans and breach notification procedures.",
+      component: DataBreachSection
+    },
+    {
+      id: "cross_border_transfer",
+      title: "Cross-Border Data Transfer",
+      description: "International data transfer safeguards and compliance measures.",
+      component: CrossBorderSection
+    },
+    {
+      id: "monitoring_oversight",
+      title: "Monitoring & Oversight",
+      description: "Ongoing monitoring and audit provisions for vendor oversight.",
+      component: MonitoringOversightSection
+    },
+    {
+      id: "exit_termination",
+      title: "Exit & Termination",
+      description: "Data return, deletion and transition procedures upon contract termination.",
+      component: ExitTerminationSection
+    },
+    {
+      id: "university_assessment",
+      title: "University / DPO Assessment", 
+      description: "University Data Protection Officer assessment and risk rating.",
+      component: UniversityAssessmentSection
+    },
+    {
+      id: "approval",
+      title: "Approval",
+      description: "Final approval decision and authorized signatures.",
+      component: ApprovalSection
+    }
   ];
 
   const handleSubmit = async (formData: Record<string, any>) => {
