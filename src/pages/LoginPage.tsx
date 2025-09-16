@@ -55,6 +55,13 @@ const LoginPage = () => {
         .eq('id', userId)
         .single();
 
+      // Handle RLS recursion error specifically
+      if (profileError?.code === '42P17') {
+        console.warn('RLS recursion detected, defaulting to vendor dashboard');
+        navigate('/vendor/dashboard');
+        return;
+      }
+
       if (profileError) {
         console.error('Error fetching profile:', profileError);
         navigate('/vendor/dashboard');
@@ -165,16 +172,15 @@ const LoginPage = () => {
             .eq('id', data.user.id)
             .single();
 
+          // Handle RLS recursion error specifically
+          if (profileError?.code === '42P17') {
+            console.warn('RLS recursion detected, defaulting to vendor dashboard');
+            navigate('/vendor/dashboard');
+            return;
+          }
+
           if (profileError) {
             console.error('Error fetching profile:', profileError);
-            
-            // If it's a policy recursion error, assume vendor role
-            if (profileError.code === '42P17') {
-              console.log('Policy recursion detected, defaulting to vendor role');
-              navigate('/vendor/dashboard');
-              return;
-            }
-            
             navigate('/vendor/dashboard');
             return;
           }

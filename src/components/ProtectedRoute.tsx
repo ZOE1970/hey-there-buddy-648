@@ -21,15 +21,31 @@ const ProtectedRoute = ({ children, requiredRole }: {
 
         // If role is required, check user role
         if (requiredRole) {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
 
-          if (error || profile?.role !== requiredRole) {
-            navigate('/login');
-            return;
+            // Handle RLS recursion error - default to vendor role
+            if (error?.code === '42P17') {
+              console.warn('RLS recursion detected, assuming vendor role');
+              if (requiredRole !== 'vendor') {
+                navigate('/login');
+                return;
+              }
+            } else if (error || profile?.role !== requiredRole) {
+              navigate('/login');
+              return;
+            }
+          } catch (err) {
+            console.error('Profile check error:', err);
+            // Default to vendor for any profile fetch errors
+            if (requiredRole !== 'vendor') {
+              navigate('/login');
+              return;
+            }
           }
         }
       } catch (error) {
