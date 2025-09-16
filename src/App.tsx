@@ -43,14 +43,14 @@ const App = () => (
             </ProtectedRoute>
           } />
           
-          {/* Protected Admin Routes */}
+          {/* Protected Superadmin Routes */}
           <Route path="/admin/dashboard" element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole="superadmin">
               <AdminDashboard />
             </ProtectedRoute>
           } />
           <Route path="/admin/review/:id" element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRole="superadmin">
               <AdminReview />
             </ProtectedRoute>
           } />

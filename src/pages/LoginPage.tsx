@@ -34,12 +34,64 @@ const LoginPage = () => {
     general: ""
   });
 
+  // Create user profile if it doesn't exist
+  const createUserProfile = async (userId: string, email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([{ 
+          id: userId, 
+          email: email,
+          role: 'vendor',
+          first_name: formData.firstName || '',
+          last_name: formData.lastName || '',
+          phone: formData.phone || '',
+          company: formData.company || '',
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      throw error;
+    }
+  };
+
+  // Safe profile fetch that handles empty results
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      // Use .select() without .single() to avoid PGRST116
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId);
+      
+      if (error) {
+        // Handle RLS recursion error specifically
+        if (error.code === '42P17') {
+          console.warn('RLS recursion detected');
+          return { profile: null, error: null };
+        }
+        throw error;
+      }
+      
+      // Return the first profile if exists, otherwise null
+      return { profile: data && data.length > 0 ? data[0] : null, error: null };
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      return { profile: null, error };
+    }
+  };
+
   // Check if user is already logged in
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        redirectBasedOnRole(session.user.id);
+        redirectBasedOnRole(session.user.id, session.user.email!);
       }
     };
     
@@ -47,20 +99,9 @@ const LoginPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const redirectBasedOnRole = async (userId: string) => {
+  const redirectBasedOnRole = async (userId: string, userEmail: string) => {
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      // Handle RLS recursion error specifically
-      if (profileError?.code === '42P17') {
-        console.warn('RLS recursion detected, defaulting to vendor dashboard');
-        navigate('/vendor/dashboard');
-        return;
-      }
+      const { profile, error: profileError } = await fetchUserProfile(userId);
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
@@ -68,7 +109,24 @@ const LoginPage = () => {
         return;
       }
 
-      // Redirect based on role
+      // If profile doesn't exist, create one
+      if (!profile) {
+        try {
+          const newProfile = await createUserProfile(userId, userEmail);
+          // Redirect based on new profile role
+          if (newProfile?.role === 'superadmin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/vendor/dashboard');
+          }
+        } catch (error) {
+          console.error('Error creating profile during redirect:', error);
+          navigate('/vendor/dashboard');
+        }
+        return;
+      }
+
+      // Redirect based on existing profile role
       if (profile?.role === 'superadmin') {
         navigate('/admin/dashboard');
       } else {
@@ -165,36 +223,7 @@ const LoginPage = () => {
       }
 
       if (data.user) {
-        try {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
-
-          // Handle RLS recursion error specifically
-          if (profileError?.code === '42P17') {
-            console.warn('RLS recursion detected, defaulting to vendor dashboard');
-            navigate('/vendor/dashboard');
-            return;
-          }
-
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-            navigate('/vendor/dashboard');
-            return;
-          }
-
-          // Redirect based on role
-          if (profile?.role === 'superadmin') {
-            navigate('/admin/dashboard');
-          } else {
-            navigate('/vendor/dashboard');
-          }
-        } catch (error) {
-          console.error('Error redirecting:', error);
-          navigate('/vendor/dashboard');
-        }
+        await redirectBasedOnRole(data.user.id, data.user.email!);
       }
     } catch (error: unknown) {
       console.error('Login error:', error);
@@ -243,7 +272,7 @@ const LoginPage = () => {
 
       if (data.user) {
         // For immediate access (without email verification), uncomment the line below
-        // await redirectBasedOnRole(data.user.id);
+        // await redirectBasedOnRole(data.user.id, data.user.email!);
         
         // For email verification flow:
         alert('Please check your email for verification instructions. You will be redirected to your dashboard after verification.');

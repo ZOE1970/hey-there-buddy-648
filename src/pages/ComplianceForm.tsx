@@ -15,8 +15,6 @@ import DataBreachSection from "@/components/form-sections/DataBreachSection";
 import CrossBorderSection from "@/components/form-sections/CrossBorderSection";
 import MonitoringOversightSection from "@/components/form-sections/MonitoringOversightSection";
 import ExitTerminationSection from "@/components/form-sections/ExitTerminationSection";
-import UniversityAssessmentSection from "@/components/form-sections/UniversityAssessmentSection";
-import ApprovalSection from "@/components/form-sections/ApprovalSection";
 
 const ComplianceForm = () => {
   const navigate = useNavigate();
@@ -71,7 +69,7 @@ const ComplianceForm = () => {
       component: DataSubjectRightsSection
     },
     {
-      id: "data_breach_management",
+      id: "DBM",
       title: "Data Breach Management",
       description: "Incident response plans and breach notification procedures.",
       component: DataBreachSection
@@ -94,18 +92,7 @@ const ComplianceForm = () => {
       description: "Data return, deletion and transition procedures upon contract termination.",
       component: ExitTerminationSection
     },
-    {
-      id: "university_assessment",
-      title: "University / DPO Assessment", 
-      description: "University Data Protection Officer assessment and risk rating.",
-      component: UniversityAssessmentSection
-    },
-    {
-      id: "approval",
-      title: "Approval",
-      description: "Final approval decision and authorized signatures.",
-      component: ApprovalSection
-    }
+   
   ];
 
   const handleSubmit = async (formData: Record<string, any>) => {

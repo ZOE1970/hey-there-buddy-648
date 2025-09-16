@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/superbase';
 
-const ProtectedRoute = ({ children, requiredRole }: { 
+interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'vendor' | 'admin';
-}) => {
+  requiredRole?: 'vendor' | 'superadmin';
+}
+
+const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
