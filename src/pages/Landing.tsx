@@ -1,102 +1,91 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Building, Users, CheckCircle } from "lucide-react";
+import { Shield, Building, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { supabase } from "../lib/superbase";
 
 const Landing = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Check user role and redirect accordingly
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.role === 'superadmin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/vendor/dashboard');
+        }
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-gradient-hero">
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <Shield className="h-16 w-16 mx-auto mb-6 text-primary-foreground" />
-          <h1 className="text-4xl font-bold text-primary-foreground mb-4">
+        <div className="text-center mb-8 md:mb-12">
+          <Shield className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 text-primary-foreground" />
+          <h1 className="text-2xl md:text-4xl font-bold text-primary-foreground mb-3 md:mb-4 px-2">
             Vendor Data Protection Compliance Portal
           </h1>
-          <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
+          <p className="text-base md:text-xl text-primary-foreground/80 max-w-2xl mx-auto px-4">
             Streamline your third-party vendor compliance process with our comprehensive data protection checklist system.
           </p>
         </div>
 
-        {/* Role Selection Cards */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-          {/* Vendor Card */}
+        {/* Vendor Card Only */}
+        <div className="max-w-md mx-auto mb-8 md:mb-12 px-2">
           <Card className="border-primary-foreground/20 bg-card/95 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-            <CardHeader className="text-center pb-6">
-              <Building className="h-12 w-12 mx-auto mb-4 text-primary" />
-              <CardTitle className="text-2xl">Vendor Access</CardTitle>
-              <CardDescription className="text-base">
+            <CardHeader className="text-center pb-4 md:pb-6">
+              <Building className="h-10 w-10 md:h-12 md:w-12 mx-auto mb-3 md:mb-4 text-primary" />
+              <CardTitle className="text-xl md:text-2xl">Vendor Access</CardTitle>
+              <CardDescription className="text-sm md:text-base">
                 Submit and manage your data protection compliance forms
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  <span className="text-sm">Submit compliance forms</span>
+            <CardContent className="space-y-3 md:space-y-4">
+              <div className="space-y-2 md:space-y-3">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-success" />
+                  <span className="text-xs md:text-sm">Submit compliance forms</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  <span className="text-sm">Track submission status</span>
+                <div className="flex items-center gap-2 md:gap-3">
+                  <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-success" />
+                  <span className="text-xs md:text-sm">Track submission status</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  <span className="text-sm">Download certificates</span>
+                <div className="flex items-center gap-2 md:gap-3">
+                  <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-success" />
+                  <span className="text-xs md:text-sm">Download certificates</span>
                 </div>
               </div>
               <Button 
-                className="w-full mt-6" 
+                className="w-full mt-4 md:mt-6" 
                 size="lg"
-                onClick={() => navigate('/vendor/dashboard')}
+                onClick={() => navigate('/login')}
               >
                 Access Vendor Portal
               </Button>
             </CardContent>
           </Card>
-
-          {/* Admin Card */}
-          <Card className="border-primary-foreground/20 bg-card/95 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-            <CardHeader className="text-center pb-6">
-              <Users className="h-12 w-12 mx-auto mb-4 text-primary" />
-              <CardTitle className="text-2xl">Admin Access</CardTitle>
-              <CardDescription className="text-base">
-                Review and manage vendor compliance submissions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  <span className="text-sm">Review submissions</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  <span className="text-sm">Approve or reject forms</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  <span className="text-sm">Generate certificates</span>
-                </div>
-              </div>
-              <Button 
-                variant="secondary" 
-                className="w-full mt-6" 
-                size="lg"
-                onClick={() => navigate('/admin/dashboard')}
-              >
-                Access Admin Portal
-              </Button>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Footer */}
-        <div className="text-center text-primary-foreground/60">
-          <p className="text-sm">
+        {/* Admin Login Hint (optional) */}
+        <div className="text-center text-primary-foreground/60 px-2">
+          <p className="text-xs md:text-sm mb-2">
             Secure • Compliant • Efficient
           </p>
+         
         </div>
       </div>
     </div>
