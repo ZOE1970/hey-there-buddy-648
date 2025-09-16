@@ -18,7 +18,7 @@ const CertificateViewer = () => {
       
       try {
         const { data, error } = await supabase
-          .from('compliance_submissions')
+          .from('compliance_submissions' as any)
           .select('*')
           .eq('id', id)
           .single();

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      compliance_submissions: {
+        Row: {
+          certificate_number: string | null
+          created_at: string
+          form_data: Json
+          id: string
+          risk_level: string
+          serial_number: number
+          service_name: string
+          status: string
+          updated_at: string
+          vendor_email: string
+          vendor_name: string
+        }
+        Insert: {
+          certificate_number?: string | null
+          created_at?: string
+          form_data: Json
+          id?: string
+          risk_level?: string
+          serial_number?: number
+          service_name: string
+          status?: string
+          updated_at?: string
+          vendor_email: string
+          vendor_name: string
+        }
+        Update: {
+          certificate_number?: string | null
+          created_at?: string
+          form_data?: Json
+          id?: string
+          risk_level?: string
+          serial_number?: number
+          service_name?: string
+          status?: string
+          updated_at?: string
+          vendor_email?: string
+          vendor_name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -43,6 +85,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_risk_level: {
+        Args: { form_data: Json }
+        Returns: string
+      }
       is_superadmin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
