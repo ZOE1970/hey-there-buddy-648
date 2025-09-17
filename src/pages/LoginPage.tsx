@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, Building, Check } from "lucide-react";
-import { supabase } from '../lib/superbase';
+import { supabase } from '@/integrations/supabase/client';
 import cdpoLogo from "@/assets/cdpo-logo-nobg.png";
 
 const LoginPage = () => {
