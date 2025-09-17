@@ -73,7 +73,8 @@ const FormWizard = ({ sections, onSubmit, onSave }: FormWizardProps) => {
               </p>
             </div>
             <Button variant="outline" onClick={() => navigate('/vendor/dashboard')} className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
-              Exit Form
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Go Back to Dashboard
             </Button>
           </div>
           
