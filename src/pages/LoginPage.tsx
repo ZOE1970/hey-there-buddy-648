@@ -57,19 +57,19 @@ const LoginPage = () => {
     }
   }, []);
 
-  // Listen for auth state changes to handle OAuth callbacks
+  // Listen for auth state changes to handle non-OAuth logins only
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Only handle auth changes if not coming from OAuth callback
+      if (window.location.pathname === '/auth/callback') {
+        return; // Let AuthCallback component handle OAuth redirects
+      }
+      
       if (event === 'SIGNED_IN' && session?.user) {
         console.log('User signed in:', session.user);
         
-        // Check if this is a new user (first time sign in)
-        const isNewUser = event === 'SIGNED_IN' && session.user.created_at === session.user.last_sign_in_at;
-        
-        // For Google OAuth users, we may need to create a profile
-        if (session.user.app_metadata.provider === 'google') {
-          await handleOAuthUserProfile(session.user, isNewUser);
-        } else {
+        // Only handle non-OAuth logins (email/password)
+        if (session.user.app_metadata.provider !== 'google') {
           await redirectBasedOnRole(session.user.id, session.user.email!);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -82,53 +82,6 @@ const LoginPage = () => {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Handle OAuth user profile creation/update
-  const handleOAuthUserProfile = async (user: SupabaseUser, isNewUser: boolean) => {
-    try {
-      const { profile, error: fetchError } = await fetchUserProfile(user.id);
-      
-      if (fetchError) {
-        console.error('Error fetching OAuth user profile:', fetchError);
-        navigate('/vendor/dashboard');
-        return;
-      }
-
-      // If profile doesn't exist, create one with Google data
-      if (!profile) {
-        try {
-          const googleMetadata = user.user_metadata || {};
-          const newProfile = await createUserProfile(user.id, user.email!, {
-            firstName: googleMetadata.given_name || googleMetadata.name?.split(' ')[0] || '',
-            lastName: googleMetadata.family_name || googleMetadata.name?.split(' ').slice(1).join(' ') || '',
-            phone: '',
-            company: '',
-            avatar_url: googleMetadata.avatar_url || googleMetadata.picture
-          });
-          
-          // Redirect based on new profile role
-          if (newProfile?.role === 'superadmin') {
-            navigate('/admin/dashboard');
-          } else {
-            navigate('/vendor/dashboard');
-          }
-        } catch (error) {
-          console.error('Error creating OAuth user profile:', error);
-          navigate('/vendor/dashboard');
-        }
-      } else {
-        // Profile exists, redirect based on role
-        if (profile?.role === 'superadmin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/vendor/dashboard');
-        }
-      }
-    } catch (error) {
-      console.error('Error handling OAuth user:', error);
-      navigate('/vendor/dashboard');
-    }
-  };
 
   // Save or remove credentials based on remember me checkbox
   const handleRememberMe = (email: string, remember: boolean) => {
