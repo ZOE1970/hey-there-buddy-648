@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, FileText, Download, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/superbase";
+import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 

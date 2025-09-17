@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, Building, Check, Loader2 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import cdpoLogo from "@/assets/cdpo-logo-nobg.png";
+import runLogo from "@/assets/run-university-logo.png";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -531,7 +531,7 @@ const LoginPage = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1 p-4 md:p-6">
             <div className="flex justify-center mb-2 md:mb-4">
-              <img src={cdpoLogo} alt="CDPO Logo" className="h-12 w-12 md:h-16 md:w-16" />
+              <img src={runLogo} alt="Redeemer's University Logo" className="h-12 w-12 md:h-16 md:w-16" />
             </div>
             <CardTitle className="text-xl md:text-2xl font-bold text-center">
               {resetEmailSent ? "Check Your Email" : "Reset Password"}
@@ -633,7 +633,7 @@ const LoginPage = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 p-4 md:p-6">
           <div className="flex justify-center mb-2 md:mb-4">
-            <img src={cdpoLogo} alt="CDPO Logo" className="h-16 w-16 md:h-20 md:w-20 drop-shadow-lg" />
+            <img src={runLogo} alt="Redeemer's University Logo" className="h-16 w-16 md:h-20 md:w-20 drop-shadow-lg" />
           </div>
           <CardTitle className="text-xl md:text-2xl font-bold text-center">
             {isSignUp ? "Create Account" : "DPO Vendor Compliance"}
