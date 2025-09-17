@@ -52,7 +52,7 @@ const VendorDashboard = () => {
           .from('user_profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         setUserProfile(profile);
         
