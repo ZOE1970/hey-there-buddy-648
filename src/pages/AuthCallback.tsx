@@ -40,32 +40,24 @@ const AuthCallback = () => {
           return;
         }
 
-        // Handle the OAuth callback exchange
-        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        // Let Supabase handle the OAuth callback automatically
+        // Just wait a moment for the auth state to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        if (exchangeError) {
-          console.error('Code exchange error:', exchangeError);
-          navigate('/login?error=exchange_failed');
+        // Check current session after OAuth callback
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          navigate('/login?error=session_failed');
           return;
         }
-
-        if (data.session?.user) {
-          await redirectByRole(data.session.user.id, data.session.user.email);
+        
+        if (session?.user) {
+          await redirectByRole(session.user.id, session.user.email);
         } else {
-          // Fallback: check current session
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          
-          if (sessionError) {
-            console.error('Session error:', sessionError);
-            navigate('/login?error=session_failed');
-            return;
-          }
-          
-          if (session?.user) {
-            await redirectByRole(session.user.id, session.user.email);
-          } else {
-            navigate('/login?error=no_session');
-          }
+          // If no session after callback, likely an auth issue
+          navigate('/login?error=no_session');
         }
       } catch (error) {
         console.error('Auth callback error:', error);
