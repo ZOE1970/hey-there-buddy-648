@@ -10,6 +10,7 @@ import ComplianceIntroSection from "@/components/form-sections/ComplianceIntroSe
 import LegalContractualSection from "@/components/form-sections/LegalContractualSection";
 import GovernanceAccountabilitySection from "@/components/form-sections/GovernanceAccountabilitySection";
 import SecurityMeasuresSection from "@/components/form-sections/SecurityMeasuresSection";
+import DataProcessingSection from "@/components/form-sections/DataProcessingSection";
 import DataSubjectRightsSection from "@/components/form-sections/DataSubjectRightsSection";
 import DataBreachSection from "@/components/form-sections/DataBreachSection";
 import CrossBorderSection from "@/components/form-sections/CrossBorderSection";
@@ -69,8 +70,14 @@ const ComplianceForm = () => {
       component: DataSubjectRightsSection
     },
     {
+      id: "data_processing",
+      title: "Data Processing",
+      description: "Data processing and management procedures.",
+      component: DataProcessingSection
+    },
+    {
       id: "DBM",
-      title: "Data Breach Management",
+      title: "Data Breach",
       description: "Incident response plans and breach notification procedures.",
       component: DataBreachSection
     },

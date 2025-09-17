@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Building, CheckCircle } from "lucide-react";
+import { Building, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "../lib/superbase";
+import cdpoLogo from "@/assets/cdpo-logo.jpeg";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const Landing = () => {
       <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
-          <Shield className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 text-primary-foreground" />
+          <img src={cdpoLogo} alt="CDPO Logo" className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6" />
           <h1 className="text-2xl md:text-4xl font-bold text-primary-foreground mb-3 md:mb-4 px-2">
             Vendor Data Protection Compliance Portal
           </h1>

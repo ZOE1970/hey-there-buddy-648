@@ -7,56 +7,87 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, FileText } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { Submission } from "@/hooks/useSubmissions";
 
 const AdminReview = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { vendorSlug } = useParams();
   const [decision, setDecision] = useState("");
   const [riskLevel, setRiskLevel] = useState("");
   const [comments, setComments] = useState("");
+  const [submission, setSubmission] = useState<Submission | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Mock submission data - would be fetched from API
-  const submission = {
-    id: id || "1",
-    vendorName: "TechCorp Solutions",
-    serviceName: "Cloud Storage Service",
-    submissionDate: "2024-01-15",
-    status: "pending",
-    sections: {
-      general_info: {
-        organization_name: "TechCorp Solutions",
-        contact_person: "John Smith",
-        contact_email: "john.smith@techcorp.com",
-        contact_phone: "+1-555-0123",
-        service_name: "Cloud Storage Service",
-        service_description: "Secure cloud storage solution for enterprise data management with advanced encryption and access controls.",
-        service_type: "new",
-        processes_personal_data: "yes",
-        university_access: "yes"
-      },
-      data_processing: {
-        data_types: ["Email Addresses", "Employee Information", "Financial Data"],
-        data_purpose: "To provide secure storage and management of university data with appropriate access controls and backup procedures.",
-        data_location: "us",
-        data_retention: "3years",
-        third_party_sharing: "no",
-        has_dpo: "yes"
-      },
-      security_measures: {
-        security_measures: ["Encryption at rest", "Encryption in transit", "Multi-factor authentication", "Access controls"],
-        certifications: ["SOC 2 Type II", "ISO 27001"],
-        security_assessment_frequency: "annually",
-        incident_response_plan: "yes",
-        employee_training: "formal_regular",
-        additional_security: "We implement additional monitoring and logging capabilities beyond standard requirements."
+  useEffect(() => {
+    const fetchSubmission = async () => {
+      if (!vendorSlug) {
+        console.log('No vendor slug provided');
+        return;
       }
-    }
-  };
+      
+      console.log('Fetching submission with vendor slug:', vendorSlug);
+      
+      try {
+        // Try to find by vendor name slug first
+        const vendorName = vendorSlug.split('-').join(' ');
+        
+        let { data, error } = await supabase
+          .from('compliance_submissions')
+          .select('*')
+          .ilike('vendor_name', `%${vendorName}%`)
+          .limit(1)
+          .maybeSingle();
+
+        // If not found by name, try to extract ID from slug
+        if (!data && vendorSlug.includes('-')) {
+          const parts = vendorSlug.split('-');
+          const idPart = parts[parts.length - 1];
+          
+          if (idPart && idPart.length >= 8) {
+            const { data: idData, error: idError } = await supabase
+              .from('compliance_submissions')
+              .select('*')
+              .ilike('id', `${idPart}%`)
+              .limit(1)
+              .maybeSingle();
+            
+            data = idData;
+            error = idError;
+          }
+        }
+
+        console.log('Supabase query result:', { data, error });
+
+        if (error) throw error;
+        
+        if (!data) {
+          throw new Error('Submission not found');
+        }
+        
+        setSubmission(data);
+        setRiskLevel(data.risk_level);
+      } catch (error) {
+        console.error('Error fetching submission:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load submission details.",
+          variant: "destructive"
+        });
+        navigate('/admin/dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmission();
+  }, [vendorSlug, navigate]);
 
   const handleDecision = async () => {
-    if (!decision || !riskLevel) {
+    if (!decision || !riskLevel || !submission) {
       toast({
         title: "Missing Information",
         description: "Please select both a decision and risk level.",
@@ -65,9 +96,25 @@ const AdminReview = () => {
       return;
     }
 
+    setSubmitting(true);
     try {
-      // This would be replaced with actual API call
-      console.log("Submitting decision:", { decision, riskLevel, comments });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const updates = {
+        status: decision === 'approved' ? 'approved' : decision === 'rejected' ? 'rejected' : 'conditional',
+        risk_level: riskLevel,
+        review_decision: decision,
+        review_comments: comments,
+        reviewer_id: user.id
+      };
+
+      const { error } = await supabase
+        .from('compliance_submissions')
+        .update(updates)
+        .eq('id', submission.id);
+
+      if (error) throw error;
       
       toast({
         title: "Decision Submitted",
@@ -76,11 +123,14 @@ const AdminReview = () => {
       
       navigate('/admin/dashboard');
     } catch (error) {
+      console.error('Error submitting decision:', error);
       toast({
         title: "Submission Failed",
         description: "There was an error submitting your decision. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -97,6 +147,30 @@ const AdminReview = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading submission details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!submission) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Submission not found.</p>
+          <Button onClick={() => navigate('/admin/dashboard')}>Back to Dashboard</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const formData = submission.form_data || {};
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -110,12 +184,12 @@ const AdminReview = () => {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Review Submission</h1>
-                <p className="text-muted-foreground">{submission.vendorName} - {submission.serviceName}</p>
+                <p className="text-muted-foreground">{submission.vendor_name} - {submission.service_name}</p>
               </div>
             </div>
             <Badge variant="secondary">
               <FileText className="h-3 w-3 mr-1" />
-              Pending Review
+              {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
             </Badge>
           </div>
         </div>
@@ -135,25 +209,25 @@ const AdminReview = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Organization</Label>
-                    <p className="font-medium">{submission.sections.general_info.organization_name}</p>
+                    <p className="font-medium">{submission.vendor_name}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Contact Person</Label>
-                    <p className="font-medium">{submission.sections.general_info.contact_person}</p>
+                    <p className="font-medium">{formData.general_info?.contact_person || 'N/A'}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                    <p className="font-medium">{submission.sections.general_info.contact_email}</p>
+                    <p className="font-medium">{submission.vendor_email}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
-                    <p className="font-medium">{submission.sections.general_info.contact_phone}</p>
+                    <p className="font-medium">{formData.general_info?.contact_phone || 'N/A'}</p>
                   </div>
                 </div>
                 <Separator />
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Service Description</Label>
-                  <p className="mt-1">{submission.sections.general_info.service_description}</p>
+                  <p className="mt-1">{formData.general_info?.service_description || submission.service_name}</p>
                 </div>
               </CardContent>
             </Card>
@@ -168,23 +242,23 @@ const AdminReview = () => {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Data Types Processed</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {submission.sections.data_processing.data_types.map((type) => (
-                      <Badge key={type} variant="secondary">{type}</Badge>
+                    {(formData.data_processing?.data_types || []).map((type: string, index: number) => (
+                      <Badge key={index} variant="secondary">{type}</Badge>
                     ))}
                   </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Purpose of Processing</Label>
-                  <p className="mt-1">{submission.sections.data_processing.data_purpose}</p>
+                  <p className="mt-1">{formData.data_processing?.data_purpose || 'N/A'}</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Data Location</Label>
-                    <p className="font-medium">{submission.sections.data_processing.data_location.toUpperCase()}</p>
+                    <p className="font-medium">{formData.data_processing?.data_location?.toUpperCase() || 'N/A'}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Retention Period</Label>
-                    <p className="font-medium">{submission.sections.data_processing.data_retention}</p>
+                    <p className="font-medium">{formData.data_processing?.data_retention || 'N/A'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -200,8 +274,8 @@ const AdminReview = () => {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Security Controls</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {submission.sections.security_measures.security_measures.map((measure) => (
-                      <Badge key={measure} variant="outline" className="text-success border-success">
+                    {(formData.security_measures?.security_measures || []).map((measure: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-success border-success">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         {measure}
                       </Badge>
@@ -211,14 +285,14 @@ const AdminReview = () => {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Certifications</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {submission.sections.security_measures.certifications.map((cert) => (
-                      <Badge key={cert} variant="outline" className="text-primary border-primary">{cert}</Badge>
+                    {(formData.security_measures?.certifications || []).map((cert: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-primary border-primary">{cert}</Badge>
                     ))}
                   </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Additional Information</Label>
-                  <p className="mt-1">{submission.sections.security_measures.additional_security}</p>
+                  <p className="mt-1">{formData.security_measures?.additional_security || 'N/A'}</p>
                 </div>
               </CardContent>
             </Card>
@@ -291,9 +365,9 @@ const AdminReview = () => {
                 <Button 
                   onClick={handleDecision} 
                   className="w-full bg-gradient-primary"
-                  disabled={!decision || !riskLevel}
+                  disabled={!decision || !riskLevel || submitting}
                 >
-                  Submit Decision
+                  {submitting ? "Submitting..." : "Submit Decision"}
                 </Button>
               </CardContent>
             </Card>
@@ -307,20 +381,26 @@ const AdminReview = () => {
                 <div className="flex justify-between items-center">
                   <Label className="text-sm text-muted-foreground">Submitted</Label>
                   <span className="text-sm font-medium">
-                    {new Date(submission.submissionDate).toLocaleDateString()}
+                    {new Date(submission.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <Label className="text-sm text-muted-foreground">Data Processing</Label>
-                  <Badge variant="outline" className="text-warning border-warning">Yes</Badge>
+                  <Badge variant="outline" className="text-warning border-warning">
+                    {formData.general_info?.processes_personal_data === 'yes' ? 'Yes' : 'Unknown'}
+                  </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <Label className="text-sm text-muted-foreground">University Access</Label>
-                  <Badge variant="outline" className="text-warning border-warning">Yes</Badge>
+                  <Badge variant="outline" className="text-warning border-warning">
+                    {formData.general_info?.university_access === 'yes' ? 'Yes' : 'Unknown'}
+                  </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <Label className="text-sm text-muted-foreground">Has DPO</Label>
-                  <Badge variant="outline" className="text-success border-success">Yes</Badge>
+                  <Badge variant="outline" className="text-success border-success">
+                    {formData.data_processing?.has_dpo === 'yes' ? 'Yes' : 'Unknown'}
+                  </Badge>
                 </div>
                 {riskLevel && (
                   <div className="flex justify-between items-center pt-2 border-t">

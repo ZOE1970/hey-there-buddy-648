@@ -163,7 +163,12 @@ const FormWizard = ({ sections, onSubmit, onSave }: FormWizardProps) => {
                   >
                     <div className="text-center">
                       <div className="font-medium">{index + 1}</div>
-                      <div className="hidden sm:block truncate">{section.title.split(' ')[0]}</div>
+                      <div className="hidden sm:block truncate">
+                        {section.title === "Data Subject Rights" ? "Rights" :
+                         section.title === "Data Processing" ? "Processing" :
+                         section.title === "Data Breach" ? "Breach" :
+                         section.title.split(' ')[0]}
+                      </div>
                     </div>
                   </Button>
                 ))}

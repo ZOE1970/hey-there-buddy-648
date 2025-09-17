@@ -80,8 +80,8 @@ const SubmissionSuccess = () => {
             <div className="text-xs text-muted-foreground">
               <p>
                 If you have any questions about your submission, please contact our compliance team at{" "}
-                <a href="mailto:compliance@university.edu" className="text-primary hover:underline">
-                  compliance@university.edu
+                <a href="mailto:dpo@run.edu.ng" className="text-primary hover:underline">
+                  dpo@run.edu.ng
                 </a>
               </p>
             </div>

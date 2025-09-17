@@ -20,6 +20,10 @@ export type Database = {
           created_at: string
           form_data: Json
           id: string
+          review_comments: string | null
+          review_decision: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
           risk_level: string
           serial_number: number
           service_name: string
@@ -33,6 +37,10 @@ export type Database = {
           created_at?: string
           form_data: Json
           id?: string
+          review_comments?: string | null
+          review_decision?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
           risk_level?: string
           serial_number?: number
           service_name: string
@@ -46,6 +54,10 @@ export type Database = {
           created_at?: string
           form_data?: Json
           id?: string
+          review_comments?: string | null
+          review_decision?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
           risk_level?: string
           serial_number?: number
           service_name?: string
@@ -58,23 +70,35 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company: string | null
           created_at: string | null
           email: string
+          first_name: string | null
           id: string
+          last_name: string | null
+          phone: string | null
           role: string
           updated_at: string | null
         }
         Insert: {
+          company?: string | null
           created_at?: string | null
           email: string
+          first_name?: string | null
           id: string
+          last_name?: string | null
+          phone?: string | null
           role: string
           updated_at?: string | null
         }
         Update: {
+          company?: string | null
           created_at?: string | null
           email?: string
+          first_name?: string | null
           id?: string
+          last_name?: string | null
+          phone?: string | null
           role?: string
           updated_at?: string | null
         }
@@ -82,12 +106,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_stats: {
+        Row: {
+          admin_count: number | null
+          total_users: number | null
+          vendor_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_risk_level: {
         Args: { form_data: Json }
         Returns: string
+      }
+      delete_user_and_data: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      get_user_profile: {
+        Args: { user_id?: string }
+        Returns: Json
       }
       is_superadmin: {
         Args: Record<PropertyKey, never>

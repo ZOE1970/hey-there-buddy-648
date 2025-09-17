@@ -8,9 +8,11 @@ import LoginPage from "./pages/LoginPage";
 import VendorDashboard from "./pages/VendorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminReview from "./pages/AdminReview";
+import UserManagement from "./pages/UserManagement";
 import ComplianceForm from "./pages/ComplianceForm";
 import SubmissionSuccess from "./pages/SubmissionSuccess";
 import CertificateViewer from "./pages/CertificateViewer";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -49,13 +51,19 @@ const App = () => (
               <AdminDashboard />
             </ProtectedRoute>
           } />
-          <Route path="/admin/review/:id" element={
+          <Route path="/admin/review/:vendorSlug" element={
             <ProtectedRoute requiredRole="superadmin">
               <AdminReview />
             </ProtectedRoute>
           } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute requiredRole="superadmin">
+              <UserManagement />
+            </ProtectedRoute>
+          } />
           
           {/* Public Routes */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/certificate/:id" element={<CertificateViewer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

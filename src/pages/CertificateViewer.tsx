@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Download, ArrowLeft, CheckCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import runSeal from "@/assets/run-seal.png";
+import cdpoCertificate from "@/assets/cdpo-certificate.jpeg";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CertificateData {
   id: string;
@@ -30,24 +31,37 @@ const CertificateViewer = () => {
         return;
       }
       
-      // For now, use mock data since the database types haven't been updated
-      // TODO: Replace with actual database fetch when types are available
-      const today = new Date();
-      const nextYear = new Date();
-      nextYear.setFullYear(nextYear.getFullYear() + 1);
-      
-      setCertificate({
-        id: id || "1",
-        vendorName: "Redeemers University Data Protection Office", 
-        serviceName: "Cloud Storage Service",
-        approvalDate: today.toISOString().split('T')[0],
-        validUntil: nextYear.toISOString().split('T')[0],
-        dpoName: "Adenle Samuel",
-        certificateNumber: `RUN-CERT-${new Date().getFullYear()}-001`,
-        riskLevel: "Low"
-      });
-      
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from('compliance_submissions')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data) {
+          const today = new Date();
+          const nextYear = new Date();
+          nextYear.setFullYear(nextYear.getFullYear() + 1);
+          
+          setCertificate({
+            id: data.id,
+            vendorName: data.vendor_name,
+            serviceName: data.service_name,
+            approvalDate: data.reviewed_at || data.created_at,
+            validUntil: nextYear.toISOString().split('T')[0],
+            dpoName: "Adenle Samuel",
+            certificateNumber: data.certificate_number || `RUN-CERT-${new Date().getFullYear()}-${String(data.serial_number).padStart(3, '0')}`,
+            riskLevel: data.risk_level,
+            serialNumber: data.serial_number
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching certificate:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchCertificate();
@@ -88,17 +102,21 @@ const CertificateViewer = () => {
             <title>Certificate - ${certificate.certificateNumber}</title>
             <style>
               body { 
-                font-family: Arial, sans-serif; 
-                margin: 20px; 
+                font-family: 'Times New Roman', serif; 
+                margin: 0; 
+                padding: 20px;
                 color: #1a1a1a;
                 background: white;
+                line-height: 1.5;
               }
               .certificate-content { 
                 max-width: 800px; 
                 margin: 0 auto; 
-                padding: 40px;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
+                padding: 60px;
+                border: 3px solid #2563eb;
+                border-radius: 12px;
+                background: #ffffff;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
               }
               .text-center { text-align: center; }
               .mb-8 { margin-bottom: 2rem; }
@@ -116,7 +134,9 @@ const CertificateViewer = () => {
               .border-t { border-top: 1px solid #e5e7eb; padding-top: 2rem; }
               .uppercase { text-transform: uppercase; }
               .tracking-wide { letter-spacing: 0.025em; }
-              img { max-width: 64px; height: auto; margin: 0 auto; }
+               img { max-width: 96px; height: auto; margin: 0 auto; }
+               .university-seal { width: 80px; height: 80px; }
+               .certificate-logo { width: 96px; height: 96px; }
               @media print { 
                 body { margin: 0; } 
                 .certificate-content { border: none; }
@@ -173,7 +193,7 @@ const CertificateViewer = () => {
             <CardContent className="p-12">
               {/* University Header */}
               <div className="text-center mb-8">
-                <img src={runSeal} alt="RUN Seal" className="h-16 w-16 mx-auto mb-4 object-contain" />
+                <img src={cdpoCertificate} alt="CDPO Certificate" className="h-24 w-24 mx-auto mb-4 object-contain" />
                 <h1 className="text-3xl font-bold text-primary mb-2">Data Protection Office</h1>
                 <div className="w-24 h-1 bg-primary/30 mx-auto"></div>
               </div>
@@ -266,9 +286,9 @@ const CertificateViewer = () => {
                     <p className="text-sm text-muted-foreground">Data Protection Officer</p>
                   </div>
                   <div className="text-center md:text-right">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2 p-2">
-                      <img src={runSeal} alt="University Seal" className="h-full w-full object-contain" />
-                    </div>
+                   <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2 p-2">
+                     <img src={cdpoCertificate} alt="University Seal" className="h-full w-full object-contain" />
+                   </div>
                     <p className="text-sm text-muted-foreground">University Seal</p>
                   </div>
                 </div>

@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, FileText, Download, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/superbase";
+import { useState, useEffect } from "react";
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
@@ -24,30 +25,32 @@ const VendorDashboard = () => {
     }
   };
 
-  // Mock data - will be replaced with real API calls
-  const submissions = [
-    {
-      id: "1",
-      date: "2024-01-15",
-      status: "approved",
-      serviceName: "Cloud Storage Service",
-      reviewDate: "2024-01-20"
-    },
-    {
-      id: "2", 
-      date: "2024-02-10",
-      status: "pending",
-      serviceName: "Email Marketing Platform",
-      reviewDate: null
-    },
-    {
-      id: "3",
-      date: "2024-01-05",
-      status: "rejected",
-      serviceName: "Analytics Dashboard",
-      reviewDate: "2024-01-12"
-    }
-  ];
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('compliance_submissions')
+          .select('*')
+          .eq('vendor_email', user.email)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setSubmissions(data || []);
+      } catch (error) {
+        console.error('Error fetching submissions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmissions();
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -100,19 +103,23 @@ const VendorDashboard = () => {
           <Card>
             <CardHeader className="pb-2 pt-3 px-3 sm:px-6">
               <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Total</CardTitle>
-              <div className="text-lg sm:text-2xl font-bold">3</div>
+              <div className="text-lg sm:text-2xl font-bold">{submissions.length}</div>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2 pt-3 px-3 sm:px-6">
               <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Approved</CardTitle>
-              <div className="text-lg sm:text-2xl font-bold text-success">1</div>
+              <div className="text-lg sm:text-2xl font-bold text-success">
+                {submissions.filter(s => s.status === 'approved').length}
+              </div>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2 pt-3 px-3 sm:px-6">
               <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Pending</CardTitle>
-              <div className="text-lg sm:text-2xl font-bold text-warning">1</div>
+              <div className="text-lg sm:text-2xl font-bold text-warning">
+                {submissions.filter(s => s.status === 'pending').length}
+              </div>
             </CardHeader>
           </Card>
         </div>
@@ -131,37 +138,43 @@ const VendorDashboard = () => {
           <CardContent className="px-0 sm:px-6">
             {/* Mobile Card View */}
             <div className="block sm:hidden">
-              {submissions.map((submission) => (
-                <div key={submission.id} className="border-b last:border-b-0 p-3 mx-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-sm truncate pr-2">{submission.serviceName}</h3>
-                    {getStatusBadge(submission.status)}
-                  </div>
-                  <div className="text-xs text-muted-foreground mb-2">
-                    <div>Submitted: {new Date(submission.date).toLocaleDateString()}</div>
-                    {submission.reviewDate && (
-                      <div>Reviewed: {new Date(submission.reviewDate).toLocaleDateString()}</div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-6">
-                      <FileText className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
-                    {submission.status === "approved" && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/certificate/${submission.id}`)}
-                        className="text-xs px-2 py-1 h-6"
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        Cert
+              {loading ? (
+                <div className="p-8 text-center text-muted-foreground">Loading submissions...</div>
+              ) : submissions.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">No submissions yet</div>
+              ) : (
+                submissions.map((submission) => (
+                  <div key={submission.id} className="border-b last:border-b-0 p-3 mx-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium text-sm truncate pr-2">{submission.service_name}</h3>
+                      {getStatusBadge(submission.status)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      <div>Submitted: {new Date(submission.created_at).toLocaleDateString()}</div>
+                      {submission.reviewed_at && (
+                        <div>Reviewed: {new Date(submission.reviewed_at).toLocaleDateString()}</div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-6">
+                        <FileText className="h-3 w-3 mr-1" />
+                        View
                       </Button>
-                    )}
+                      {submission.status === "approved" && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/certificate/${submission.id}`)}
+                          className="text-xs px-2 py-1 h-6"
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          Cert
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {/* Desktop Table View */}
@@ -177,35 +190,49 @@ const VendorDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {submissions.map((submission) => (
-                    <TableRow key={submission.id}>
-                      <TableCell className="font-medium text-xs sm:text-sm">{submission.serviceName}</TableCell>
-                      <TableCell className="whitespace-nowrap text-xs sm:text-sm">{new Date(submission.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{getStatusBadge(submission.status)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-xs sm:text-sm">
-                        {submission.reviewDate ? new Date(submission.reviewDate).toLocaleDateString() : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-2">
-                          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-7">
-                            <FileText className="h-3 w-3 mr-1" />
-                            View
-                          </Button>
-                          {submission.status === "approved" && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigate(`/certificate/${submission.id}`)}
-                              className="text-xs px-2 py-1 h-7"
-                            >
-                              <Download className="h-3 w-3 mr-1" />
-                              Certificate
-                            </Button>
-                          )}
-                        </div>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Loading submissions...
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : submissions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No submissions yet
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    submissions.map((submission) => (
+                      <TableRow key={submission.id}>
+                        <TableCell className="font-medium text-xs sm:text-sm">{submission.service_name}</TableCell>
+                        <TableCell className="whitespace-nowrap text-xs sm:text-sm">{new Date(submission.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                        <TableCell className="whitespace-nowrap text-xs sm:text-sm">
+                          {submission.reviewed_at ? new Date(submission.reviewed_at).toLocaleDateString() : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-7">
+                              <FileText className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                            {submission.status === "approved" && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigate(`/certificate/${submission.id}`)}
+                                className="text-xs px-2 py-1 h-7"
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Certificate
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

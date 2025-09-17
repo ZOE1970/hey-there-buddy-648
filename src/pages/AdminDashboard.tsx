@@ -14,57 +14,20 @@ import {
   Download,
   Filter,
   X,
-  LogOut
+  LogOut,
+  Users
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { supabase } from '../lib/superbase';
+import { supabase } from '@/integrations/supabase/client';
+import { useSubmissions } from '@/hooks/useSubmissions';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-
-  // Mock data - will be replaced with real API calls
-  const submissions = [
-    {
-      id: "1",
-      vendorName: "TechCorp Solutions",
-      serviceName: "Cloud Storage Service", 
-      submissionDate: "2024-01-15",
-      status: "pending",
-      riskLevel: "medium",
-      reviewDate: null
-    },
-    {
-      id: "2",
-      vendorName: "DataFlow Inc",
-      serviceName: "Email Marketing Platform",
-      submissionDate: "2024-02-10", 
-      status: "approved",
-      riskLevel: "low",
-      reviewDate: "2024-02-15"
-    },
-    {
-      id: "3",
-      vendorName: "Analytics Pro",
-      serviceName: "Analytics Dashboard",
-      submissionDate: "2024-01-05",
-      status: "rejected",
-      riskLevel: "high", 
-      reviewDate: "2024-01-12"
-    },
-    {
-      id: "4",
-      vendorName: "SecureCloud Ltd",
-      serviceName: "File Sharing Platform",
-      submissionDate: "2024-02-20",
-      status: "pending",
-      riskLevel: "low",
-      reviewDate: null
-    }
-  ];
+  const { submissions, loading, error } = useSubmissions();
 
   const handleLogout = async () => {
     try {
@@ -107,8 +70,8 @@ const AdminDashboard = () => {
 
   const filteredSubmissions = submissions.filter(submission => {
     const matchesStatus = statusFilter === "all" || submission.status === statusFilter;
-    const matchesSearch = submission.vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         submission.serviceName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = submission.vendor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         submission.service_name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -116,18 +79,65 @@ const AdminDashboard = () => {
   const approvedCount = submissions.filter(s => s.status === "approved").length;
   const rejectedCount = submissions.filter(s => s.status === "rejected").length;
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading submissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-destructive mb-4">Error loading submissions: {error}</div>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-white shadow-sm">
+      <div className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">Review and manage vendor compliance submissions</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">DPO Vendor Compliance</h1>
+              <p className="text-muted-foreground mt-1 text-sm sm:text-base">Review and manage vendor compliance submissions</p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => navigate('/admin/users')}
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Users</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => {
+                  const csvContent = "data:text/csv;charset=utf-8," 
+                    + "Vendor,Service,Status,Risk Level,Submitted,Reviewed\n"
+                    + submissions.map(s => 
+                        `"${s.vendor_name}","${s.service_name}","${s.status}","${s.risk_level}","${new Date(s.created_at).toLocaleDateString()}","${s.reviewed_at ? new Date(s.reviewed_at).toLocaleDateString() : 'N/A'}"`
+                      ).join("\n");
+                  const encodedUri = encodeURI(csvContent);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", encodedUri);
+                  link.setAttribute("download", `vendor_compliance_export_${new Date().toISOString().split('T')[0]}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Export</span>
               </Button>
@@ -231,21 +241,21 @@ const AdminDashboard = () => {
                 <TableBody>
                   {filteredSubmissions.map((submission) => (
                     <TableRow key={submission.id} className="hover:bg-gray-50 cursor-pointer">
-                      <TableCell className="font-medium">{submission.vendorName}</TableCell>
-                      <TableCell className="text-sm">{submission.serviceName}</TableCell>
+                      <TableCell className="font-medium">{submission.vendor_name}</TableCell>
+                      <TableCell className="text-sm">{submission.service_name}</TableCell>
                       <TableCell className="text-sm">
-                        {new Date(submission.submissionDate).toLocaleDateString()}
+                        {new Date(submission.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>{getStatusBadge(submission.status)}</TableCell>
-                      <TableCell>{getRiskBadge(submission.riskLevel)}</TableCell>
+                      <TableCell>{getRiskBadge(submission.risk_level)}</TableCell>
                       <TableCell className="text-sm">
-                        {submission.reviewDate ? new Date(submission.reviewDate).toLocaleDateString() : "—"}
+                        {submission.reviewed_at ? new Date(submission.reviewed_at).toLocaleDateString() : "—"}
                       </TableCell>
                       <TableCell>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => navigate(`/admin/review/${submission.id}`)}
+                          onClick={() => navigate(`/admin/review/${submission.vendor_name.toLowerCase().replace(/\s+/g, '-')}-${submission.id.split('-')[0]}`)}
                           className="flex items-center gap-1"
                         >
                           <Eye className="h-3 w-3" />
@@ -267,8 +277,8 @@ const AdminDashboard = () => {
                       <div className="space-y-3">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 text-sm truncate">{submission.vendorName}</h3>
-                            <p className="text-xs text-gray-600 truncate">{submission.serviceName}</p>
+                            <h3 className="font-semibold text-gray-900 text-sm truncate">{submission.vendor_name}</h3>
+                            <p className="text-xs text-gray-600 truncate">{submission.service_name}</p>
                           </div>
                           {getStatusBadge(submission.status)}
                         </div>
@@ -277,20 +287,20 @@ const AdminDashboard = () => {
                           <div>
                             <span className="text-gray-600 block">Submitted:</span>
                             <span className="font-medium">
-                              {new Date(submission.submissionDate).toLocaleDateString()}
+                              {new Date(submission.created_at).toLocaleDateString()}
                             </span>
                           </div>
                           <div>
                             <span className="text-gray-600 block">Risk:</span>
-                            <span>{getRiskBadge(submission.riskLevel)}</span>
+                            <span>{getRiskBadge(submission.risk_level)}</span>
                           </div>
                         </div>
 
-                        {submission.reviewDate && (
+                        {submission.reviewed_at && (
                           <div className="text-xs">
                             <span className="text-gray-600">Reviewed:</span>
                             <span className="font-medium block">
-                              {new Date(submission.reviewDate).toLocaleDateString()}
+                              {new Date(submission.reviewed_at).toLocaleDateString()}
                             </span>
                           </div>
                         )}
@@ -298,7 +308,7 @@ const AdminDashboard = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => navigate(`/admin/review/${submission.id}`)}
+                          onClick={() => navigate(`/admin/review/${submission.vendor_name.toLowerCase().replace(/\s+/g, '-')}-${submission.id.split('-')[0]}`)}
                           className="w-full flex items-center gap-2 text-xs"
                         >
                           <Eye className="h-3 w-3" />
@@ -333,7 +343,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Priority Queue - Mobile responsive */}
-        {submissions.filter(s => s.status === "pending" && s.riskLevel === "high").length > 0 && (
+        {submissions.filter(s => s.status === "pending" && s.risk_level === "high").length > 0 && (
           <div className="mt-6">
             <Card className="bg-red-50 border-red-200">
               <CardHeader className="p-4">
@@ -348,16 +358,21 @@ const AdminDashboard = () => {
               <CardContent className="p-4">
                 <div className="space-y-3">
                   {submissions
-                    .filter(s => s.status === "pending" && s.riskLevel === "high")
+                    .filter(s => s.status === "pending" && s.risk_level === "high")
                     .map(submission => (
                       <div key={submission.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border border-red-200 rounded-lg bg-white">
                         <div className="flex-1 mb-3 sm:mb-0">
-                          <div className="font-medium text-gray-900">{submission.vendorName}</div>
-                          <div className="text-sm text-gray-600">{submission.serviceName}</div>
+                          <div className="font-medium text-gray-900">{submission.vendor_name}</div>
+                          <div className="text-sm text-gray-600">{submission.service_name}</div>
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
-                          {getRiskBadge(submission.riskLevel)}
-                          <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">
+                          {getRiskBadge(submission.risk_level)}
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="flex-1 sm:flex-none"
+                            onClick={() => navigate(`/admin/review/${submission.vendor_name.toLowerCase().replace(/\s+/g, '-')}-${submission.id.split('-')[0]}`)}
+                          >
                             Review Now
                           </Button>
                         </div>
