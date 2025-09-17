@@ -3,9 +3,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
 interface DataBreachSectionProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange: (data: Record<string, any>) => void;
 }
 
