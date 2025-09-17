@@ -50,6 +50,25 @@ const VendorDashboard = () => {
     };
 
     fetchSubmissions();
+
+    // Listen for changes in submissions to auto-refresh
+    const channel = supabase
+      .channel('vendor-submissions')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'compliance_submissions' 
+        }, 
+        () => {
+          fetchSubmissions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const getStatusBadge = (status: string) => {

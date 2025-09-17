@@ -1,6 +1,7 @@
 import FormWizard from "@/components/FormWizard";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Form Section Components
 import GeneralInfoSection from "@/components/form-sections/GeneralInfoSection";
@@ -104,11 +105,37 @@ const ComplianceForm = () => {
 
   const handleSubmit = async (formData: Record<string, any>) => {
     try {
-      // This would be replaced with actual API call
       console.log("Submitting form data:", formData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('You must be logged in to submit a form');
+      }
+
+      // Get user profile for vendor name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, company')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const vendorName = profile?.company || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Unknown Vendor';
+      
+      // Submit to compliance_submissions table
+      const { error: submitError } = await supabase
+        .from('compliance_submissions')
+        .insert({
+          vendor_name: vendorName,
+          vendor_email: user.email!,
+          service_name: formData.service_name || formData.serviceName || 'Unknown Service',
+          form_data: formData,
+          status: 'pending'
+        });
+
+      if (submitError) {
+        throw submitError;
+      }
       
       toast({
         title: "Form Submitted Successfully",
@@ -117,9 +144,10 @@ const ComplianceForm = () => {
       
       navigate('/vendor/submission-success');
     } catch (error) {
+      console.error('Submission error:', error);
       toast({
         title: "Submission Failed",
-        description: "There was an error submitting your form. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error submitting your form. Please try again.",
         variant: "destructive"
       });
     }
