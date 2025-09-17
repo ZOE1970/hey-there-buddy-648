@@ -104,92 +104,8 @@ export type Database = {
         }
         Relationships: []
       }
-      user_profiles: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          company: string | null
-          created_at: string
-          first_name: string | null
-          id: string
-          is_email_verified: boolean | null
-          last_login_at: string | null
-          last_name: string | null
-          phone: string | null
-          preferences: Json | null
-          role: string
-          updated_at: string | null
-          website: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          company?: string | null
-          created_at?: string
-          first_name?: string | null
-          id: string
-          is_email_verified?: boolean | null
-          last_login_at?: string | null
-          last_name?: string | null
-          phone?: string | null
-          preferences?: Json | null
-          role?: string
-          updated_at?: string | null
-          website?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          company?: string | null
-          created_at?: string
-          first_name?: string | null
-          id?: string
-          is_email_verified?: boolean | null
-          last_login_at?: string | null
-          last_name?: string | null
-          phone?: string | null
-          preferences?: Json | null
-          role?: string
-          updated_at?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
-      public_user_profiles: {
-        Row: {
-          avatar_url: string | null
-          company: string | null
-          created_at: string | null
-          first_name: string | null
-          full_name: string | null
-          id: string | null
-          last_name: string | null
-          role: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          company?: string | null
-          created_at?: string | null
-          first_name?: string | null
-          full_name?: never
-          id?: string | null
-          last_name?: string | null
-          role?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          company?: string | null
-          created_at?: string | null
-          first_name?: string | null
-          full_name?: never
-          id?: string | null
-          last_name?: string | null
-          role?: string | null
-        }
-        Relationships: []
-      }
       user_stats: {
         Row: {
           admin_count: number | null
@@ -210,10 +126,6 @@ export type Database = {
       }
       get_user_profile: {
         Args: { user_id?: string }
-        Returns: Json
-      }
-      get_user_stats: {
-        Args: Record<PropertyKey, never>
         Returns: Json
       }
       is_superadmin: {

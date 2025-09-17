@@ -32,13 +32,41 @@ const CertificateViewer = () => {
       }
       
       try {
-        const { data, error } = await supabase
+        // First try to find by ID
+        let { data, error } = await supabase
           .from('compliance_submissions')
           .select('*')
           .eq('id', id)
           .single();
 
-        if (error) throw error;
+        // If not found by ID, try by certificate number
+        if (error && error.code === 'PGRST116') {
+          const { data: certData, error: certError } = await supabase
+            .from('compliance_submissions')
+            .select('*')
+            .eq('certificate_number', id)
+            .single();
+          
+          data = certData;
+          error = certError;
+        }
+
+        // If still not found, try by serial number (if id is a number)
+        if (error && error.code === 'PGRST116' && !isNaN(Number(id))) {
+          const { data: serialData, error: serialError } = await supabase
+            .from('compliance_submissions')
+            .select('*')
+            .eq('serial_number', parseInt(id))
+            .single();
+          
+          data = serialData;
+          error = serialError;
+        }
+
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
         
         if (data) {
           const today = new Date();
@@ -81,8 +109,15 @@ const CertificateViewer = () => {
   if (!certificate) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Certificate not found</p>
+        <div className="text-center space-y-4">
+          <p className="text-lg text-muted-foreground">Certificate not found</p>
+          <p className="text-sm text-muted-foreground">
+            The certificate ID "{id}" does not exist or may not be approved yet.
+          </p>
+          <Button variant="outline" onClick={() => navigate('/vendor/dashboard')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
         </div>
       </div>
     );

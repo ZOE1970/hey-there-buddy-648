@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, Building, Check } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, Building, Check, Loader2 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import cdpoLogo from "@/assets/cdpo-logo-nobg.png";
 
@@ -13,6 +13,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -55,6 +56,79 @@ const LoginPage = () => {
     }
   }, []);
 
+  // Listen for auth state changes to handle OAuth callbacks
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('User signed in:', session.user);
+        
+        // Check if this is a new user (first time sign in)
+        const isNewUser = event === 'SIGNED_IN' && session.user.created_at === session.user.last_sign_in_at;
+        
+        // For Google OAuth users, we may need to create a profile
+        if (session.user.app_metadata.provider === 'google') {
+          await handleOAuthUserProfile(session.user, isNewUser);
+        } else {
+          await redirectBasedOnRole(session.user.id, session.user.email!);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle OAuth user profile creation/update
+  const handleOAuthUserProfile = async (user: unknown, isNewUser: boolean) => {
+    try {
+      const { profile, error: fetchError } = await fetchUserProfile(user.id);
+      
+      if (fetchError) {
+        console.error('Error fetching OAuth user profile:', fetchError);
+        navigate('/vendor/dashboard');
+        return;
+      }
+
+      // If profile doesn't exist, create one with Google data
+      if (!profile) {
+        try {
+          const googleMetadata = user.user_metadata || {};
+          const newProfile = await createUserProfile(user.id, user.email!, {
+            firstName: googleMetadata.given_name || googleMetadata.name?.split(' ')[0] || '',
+            lastName: googleMetadata.family_name || googleMetadata.name?.split(' ').slice(1).join(' ') || '',
+            phone: '',
+            company: '',
+            avatar_url: googleMetadata.avatar_url || googleMetadata.picture
+          });
+          
+          // Redirect based on new profile role
+          if (newProfile?.role === 'superadmin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/vendor/dashboard');
+          }
+        } catch (error) {
+          console.error('Error creating OAuth user profile:', error);
+          navigate('/vendor/dashboard');
+        }
+      } else {
+        // Profile exists, redirect based on role
+        if (profile?.role === 'superadmin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/vendor/dashboard');
+        }
+      }
+    } catch (error) {
+      console.error('Error handling OAuth user:', error);
+      navigate('/vendor/dashboard');
+    }
+  };
+
   // Save or remove credentials based on remember me checkbox
   const handleRememberMe = (email: string, remember: boolean) => {
     if (remember && email) {
@@ -65,20 +139,23 @@ const LoginPage = () => {
   };
 
   // Create user profile if it doesn't exist
-  const createUserProfile = async (userId: string, email: string) => {
+  const createUserProfile = async (userId: string, email: string, additionalData?: any) => {
     try {
+      const profileData = { 
+        id: userId, 
+        email: email,
+        role: 'vendor',
+        first_name: additionalData?.firstName || formData.firstName || '',
+        last_name: additionalData?.lastName || formData.lastName || '',
+        phone: additionalData?.phone || formData.phone || '',
+        company: additionalData?.company || formData.company || '',
+        avatar_url: additionalData?.avatar_url || null,
+        created_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabase
         .from('profiles')
-        .insert([{ 
-          id: userId, 
-          email: email,
-          role: 'vendor',
-          first_name: formData.firstName || '',
-          last_name: formData.lastName || '',
-          phone: formData.phone || '',
-          company: formData.company || '',
-          created_at: new Date().toISOString()
-        }])
+        .insert([profileData])
         .select()
         .single();
       
@@ -93,14 +170,12 @@ const LoginPage = () => {
   // Safe profile fetch that handles empty results
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Use .select() without .single() to avoid PGRST116
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId);
       
       if (error) {
-        // Handle RLS recursion error specifically
         if (error.code === '42P17') {
           console.warn('RLS recursion detected');
           return { profile: null, error: null };
@@ -108,7 +183,6 @@ const LoginPage = () => {
         throw error;
       }
       
-      // Return the first profile if exists, otherwise null
       return { profile: data && data.length > 0 ? data[0] : null, error: null };
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -126,7 +200,6 @@ const LoginPage = () => {
     };
     
     checkUser();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const redirectBasedOnRole = async (userId: string, userEmail: string) => {
@@ -139,11 +212,9 @@ const LoginPage = () => {
         return;
       }
 
-      // If profile doesn't exist, create one
       if (!profile) {
         try {
           const newProfile = await createUserProfile(userId, userEmail);
-          // Redirect based on new profile role
           if (newProfile?.role === 'superadmin') {
             navigate('/admin/dashboard');
           } else {
@@ -156,7 +227,6 @@ const LoginPage = () => {
         return;
       }
 
-      // Redirect based on existing profile role
       if (profile?.role === 'superadmin') {
         navigate('/admin/dashboard');
       } else {
@@ -175,7 +245,6 @@ const LoginPage = () => {
       [name]: type === "checkbox" ? checked : value
     }));
     
-    // Clear error when user starts typing
     if (errors[name as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [name]: "", general: "" }));
     }
@@ -253,9 +322,7 @@ const LoginPage = () => {
       }
 
       if (data.user) {
-        // Handle remember me functionality
         handleRememberMe(formData.email, formData.rememberMe);
-        
         await redirectBasedOnRole(data.user.id, data.user.email!);
       }
     } catch (error: unknown) {
@@ -294,7 +361,6 @@ const LoginPage = () => {
             company: formData.company,
             created_at: new Date().toISOString(),
           },
-          // Redirect to dashboard after email confirmation
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       });
@@ -304,10 +370,6 @@ const LoginPage = () => {
       }
 
       if (data.user) {
-        // For immediate access (without email verification), uncomment the line below
-        // await redirectBasedOnRole(data.user.id, data.user.email!);
-        
-        // For email verification flow:
         alert('Please check your email for verification instructions. You will be redirected to your dashboard after verification.');
         setIsSignUp(false);
         setFormData(prev => ({ ...prev, password: "", confirmPassword: "" }));
@@ -369,7 +431,7 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    setGoogleLoading(true);
     setErrors({ ...errors, general: "" });
     
     try {
@@ -380,25 +442,38 @@ const LoginPage = () => {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-          }
+          },
+          // Add additional scopes if needed
+          scopes: 'openid email profile'
         }
       });
 
       if (error) {
         throw error;
       }
-      // Note: Don't set loading to false here as the redirect will happen
+      
+      // Don't set loading to false here as the redirect will happen
+      // The loading state will be reset when the component unmounts or user returns
     } catch (error: unknown) {
       console.error('Google login error:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : "Failed to sign in with Google. Please try again.";
+      let errorMessage = "Failed to sign in with Google. Please try again.";
+      
+      if (error instanceof Error) {
+        // Handle specific Google OAuth errors
+        if (error.message.includes('popup')) {
+          errorMessage = "Please allow popups and try again, or check if you have popup blockers enabled.";
+        } else if (error.message.includes('network')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
       
       setErrors(prev => ({ 
         ...prev, 
         general: errorMessage
       }));
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -782,6 +857,7 @@ const LoginPage = () => {
             >
               {loading ? (
                 <>
+                  <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-2 animate-spin" />
                   {isSignUp ? "Creating Account..." : "Signing in..."}
                 </>
               ) : (
@@ -805,29 +881,38 @@ const LoginPage = () => {
             <Button 
               variant="outline" 
               type="button" 
-              disabled={loading}
+              disabled={loading || googleLoading}
               onClick={handleGoogleLogin}
               className="w-full text-xs md:text-sm"
             >
-              <svg className="h-3 w-3 md:h-4 md:w-4 mr-2" viewBox="0 0 24 24">
-                <path
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  fill="#4285F4"
-                />
-                <path
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  fill="#34A853"
-                />
-                <path
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  fill="#FBBC05"
-                />
-                <path
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  fill="#EA4335"
-                />
-              </svg>
-              Google
+              {googleLoading ? (
+                <>
+                  <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-2 animate-spin" />
+                  Signing in with Google...
+                </>
+              ) : (
+                <>
+                  <svg className="h-3 w-3 md:h-4 md:w-4 mr-2" viewBox="0 0 24 24">
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                  Continue with Google
+                </>
+              )}
             </Button>
           </div>
           
@@ -838,6 +923,7 @@ const LoginPage = () => {
               className="p-0 h-auto text-xs md:text-sm font-medium" 
               type="button" 
               onClick={toggleSignUpMode}
+              disabled={loading || googleLoading}
             >
               {isSignUp ? "Sign in" : "Sign up"}
             </Button>

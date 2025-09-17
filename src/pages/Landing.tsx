@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Building, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "../lib/superbase";
 import runLogo from "@/assets/run-university-logo.png";
 
 const Landing = () => {

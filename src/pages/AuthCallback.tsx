@@ -6,58 +6,61 @@ const AuthCallback = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
+    const redirectByRole = async (userId: string, userEmail: string | null) => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          navigate('/login?error=auth_callback_failed');
-          return;
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
         }
 
-        if (session?.user) {
-          // Check if user profile exists
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-          }
-
-          // Create profile if it doesn't exist
-          if (!profile) {
-            await supabase
-              .from('profiles')
-              .insert({
-                id: session.user.id,
-                email: session.user.email!,
-                role: 'vendor',
-                first_name: session.user.user_metadata?.full_name?.split(' ')[0] || '',
-                last_name: session.user.user_metadata?.full_name?.split(' ')[1] || '',
-              });
-          }
-
-          // Redirect based on role
-          const userRole = profile?.role || 'vendor';
-          if (userRole === 'superadmin') {
-            navigate('/admin/dashboard');
-          } else {
-            navigate('/vendor/dashboard');
-          }
-        } else {
-          navigate('/login');
+        if (!profile) {
+          await supabase.from('profiles').insert({
+            id: userId,
+            email: userEmail ?? '',
+            role: 'vendor',
+          });
         }
-      } catch (error) {
-        console.error('Auth callback error:', error);
-        navigate('/login?error=auth_callback_failed');
+
+        const role = profile?.role ?? 'vendor';
+        navigate(role === 'superadmin' ? '/admin/dashboard' : '/vendor/dashboard');
+      } catch (err) {
+        console.error('Redirect role error:', err);
+        navigate('/vendor/dashboard');
       }
     };
 
-    handleAuthCallback();
+    // Listen first to avoid race conditions
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        // Defer any Supabase reads from inside the callback
+        setTimeout(() => {
+          redirectByRole(session.user.id, session.user.email);
+        }, 0);
+      } else if (event === 'SIGNED_OUT') {
+        navigate('/login');
+      }
+    });
+
+    // Then check current session (handles provider hash on first load)
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        navigate('/login');
+        return;
+      }
+      if (session?.user) {
+        redirectByRole(session.user.id, session.user.email);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, [navigate]);
 
   return (

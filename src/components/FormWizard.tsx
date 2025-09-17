@@ -131,18 +131,20 @@ const FormWizard = ({ sections, onSubmit, onSave }: FormWizardProps) => {
                     Previous
                   </Button>
                   
-                  <Button
-                    variant="outline"
-                    onClick={handleSave}
-                    className="border-2 border-success/30 text-success hover:bg-success/10 hover:shadow-lg transition-all duration-300"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save & Continue Later
-                  </Button>
+                  {!isLastStep && (
+                    <Button
+                      variant="outline"
+                      onClick={handleSave}
+                      className="border-2 border-success/30 text-success hover:bg-success/10 hover:shadow-lg transition-all duration-300"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Save & Continue Later
+                    </Button>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
-                  {!isLastStep ? (
+                  {!isLastStep && (
                     <Button 
                       onClick={handleNext}
                       className="bg-gradient-form hover:shadow-premium transition-all duration-300 px-6"
@@ -150,17 +152,27 @@ const FormWizard = ({ sections, onSubmit, onSave }: FormWizardProps) => {
                       Next
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
-                  ) : (
-                    <Button 
-                      onClick={handleSubmit} 
-                      className="bg-gradient-rainbow hover:shadow-rainbow transition-all duration-300 px-8 text-white font-semibold"
-                    >
-                      Submit Form
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
                   )}
                 </div>
               </div>
+
+              {/* Submit Button for Last Step */}
+              {isLastStep && (
+                <div className="mt-8 p-6 bg-gradient-to-br from-success/10 to-primary/10 rounded-lg border-2 border-success/30 text-center">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Ready to Submit Your Compliance Form</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Please review all sections before submitting. Once submitted, your form will be reviewed by our compliance team.
+                  </p>
+                  <Button 
+                    onClick={handleSubmit} 
+                    size="lg"
+                    className="bg-gradient-rainbow hover:shadow-rainbow transition-all duration-300 px-12 py-3 text-white font-semibold text-lg"
+                  >
+                    Submit Form for Review
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

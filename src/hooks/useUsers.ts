@@ -27,18 +27,13 @@ export const useUsers = () => {
     try {
       setLoading(true);
       
-      // Fetch users with better error handling
+      // Fetch users
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Users fetch result:', { usersData, usersError });
-
-      if (usersError) {
-        console.error('Users fetch error:', usersError);
-        throw usersError;
-      }
+      if (usersError) throw usersError;
 
       setUsers(usersData || []);
 
@@ -47,8 +42,6 @@ export const useUsers = () => {
         .from('user_stats')
         .select('*')
         .single();
-
-      console.log('Stats fetch result:', { statsData, statsError });
 
       if (statsError && statsError.code !== 'PGRST116') {
         console.warn('Could not fetch user stats:', statsError);
