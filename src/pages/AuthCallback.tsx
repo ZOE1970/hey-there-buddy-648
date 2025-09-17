@@ -1,74 +1,160 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    const handleAuthCallback = async () => {
+      try {
+        // Check for OAuth errors in URL params first
+        const error = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
+        
+        if (error) {
+          console.error('OAuth Error:', error, errorDescription);
+          
+          // Handle specific error cases
+          if (error === 'server_error' && errorDescription?.includes('Database error saving new user')) {
+            // This happens when user already exists or there's a constraint violation
+            // Try to get the current session and handle accordingly
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError) {
+              console.error('Session error:', sessionError);
+              navigate('/login?error=auth_failed');
+              return;
+            }
+            
+            if (session?.user) {
+              // User exists, just redirect them
+              await redirectByRole(session.user.id, session.user.email);
+              return;
+            }
+          }
+          
+          // For other errors, redirect to login with error message
+          navigate(`/login?error=${error}&description=${encodeURIComponent(errorDescription || 'Authentication failed')}`);
+          return;
+        }
+
+        // Handle the OAuth callback exchange
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        
+        if (exchangeError) {
+          console.error('Code exchange error:', exchangeError);
+          navigate('/login?error=exchange_failed');
+          return;
+        }
+
+        if (data.session?.user) {
+          await redirectByRole(data.session.user.id, data.session.user.email);
+        } else {
+          // Fallback: check current session
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.error('Session error:', sessionError);
+            navigate('/login?error=session_failed');
+            return;
+          }
+          
+          if (session?.user) {
+            await redirectByRole(session.user.id, session.user.email);
+          } else {
+            navigate('/login?error=no_session');
+          }
+        }
+      } catch (error) {
+        console.error('Auth callback error:', error);
+        navigate('/login?error=callback_failed');
+      }
+    };
+
     const redirectByRole = async (userId: string, userEmail: string | null) => {
       try {
-        const { data: profile, error: profileError } = await supabase
+        // First, check if profile exists
+        const { data: existingProfile, error: fetchError } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, id')
           .eq('id', userId)
           .maybeSingle();
 
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found"
+          console.error('Error fetching profile:', fetchError);
+          // Continue anyway, try to create profile
         }
 
-        if (!profile) {
-          await supabase.from('profiles').insert({
-            id: userId,
-            email: userEmail ?? '',
-            role: 'vendor',
-          });
+        let userRole = 'vendor'; // default role
+
+        if (!existingProfile) {
+          // Profile doesn't exist, create it
+          try {
+            const { data: newProfile, error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: userId,
+                email: userEmail || '',
+                role: 'vendor',
+                created_at: new Date().toISOString(),
+              })
+              .select('role')
+              .single();
+
+            if (insertError) {
+              console.error('Error creating profile:', insertError);
+              
+              // If it's a unique violation, the user might already exist
+              if (insertError.code === '23505') { // unique violation
+                // Try to fetch the existing profile again
+                const { data: retryProfile } = await supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', userId)
+                  .single();
+                
+                userRole = retryProfile?.role || 'vendor';
+              } else {
+                // For other errors, use default role and continue
+                userRole = 'vendor';
+              }
+            } else {
+              userRole = newProfile?.role || 'vendor';
+            }
+          } catch (createError) {
+            console.error('Profile creation failed:', createError);
+            userRole = 'vendor'; // fallback
+          }
+        } else {
+          userRole = existingProfile.role;
         }
 
-        const role = profile?.role ?? 'vendor';
-        // Always redirect to vendor dashboard for new users (including Google signup)
-        navigate('/vendor/dashboard');
+        // Redirect based on role
+        if (userRole === 'superadmin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/vendor/dashboard');
+        }
       } catch (err) {
         console.error('Redirect role error:', err);
+        // Always redirect somewhere, never leave user hanging
         navigate('/vendor/dashboard');
       }
     };
 
-    // Listen first to avoid race conditions
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        // Defer any Supabase reads from inside the callback
-        setTimeout(() => {
-          redirectByRole(session.user.id, session.user.email);
-        }, 0);
-      } else if (event === 'SIGNED_OUT') {
-        navigate('/login');
-      }
-    });
-
-    // Then check current session (handles provider hash on first load)
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Error getting session:', error);
-        navigate('/login');
-        return;
-      }
-      if (session?.user) {
-        redirectByRole(session.user.id, session.user.email);
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [navigate]);
+    handleAuthCallback();
+  }, [navigate, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Completing sign in...</p>
+      <div className="text-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <div className="space-y-2">
+          <p className="text-muted-foreground">Completing sign in...</p>
+          <p className="text-xs text-muted-foreground">This may take a moment</p>
+        </div>
       </div>
     </div>
   );
