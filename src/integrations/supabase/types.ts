@@ -110,6 +110,7 @@ export type Database = {
           bio: string | null
           company: string | null
           created_at: string
+          email: string | null
           first_name: string | null
           id: string
           is_email_verified: boolean | null
@@ -126,6 +127,7 @@ export type Database = {
           bio?: string | null
           company?: string | null
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id: string
           is_email_verified?: boolean | null
@@ -142,6 +144,7 @@ export type Database = {
           bio?: string | null
           company?: string | null
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id?: string
           is_email_verified?: boolean | null
@@ -207,6 +210,10 @@ export type Database = {
       delete_user_and_data: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      get_current_user_role_user_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_user_profile: {
         Args: { user_id?: string }
