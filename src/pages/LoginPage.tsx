@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, Building } from "lucide-react";
 import { supabase } from '../lib/superbase';
-import cdpoLogo from "@/assets/cdpo-logo.jpeg";
+import cdpoLogo from "@/assets/cdpo-logo-nobg.png";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -348,7 +348,7 @@ const LoginPage = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 p-4 md:p-6">
           <div className="flex justify-center mb-2 md:mb-4">
-            <img src={cdpoLogo} alt="CDPO Logo" className="h-12 w-12 md:h-16 md:w-16" />
+            <img src={cdpoLogo} alt="CDPO Logo" className="h-16 w-16 md:h-20 md:w-20 drop-shadow-lg" />
           </div>
           <CardTitle className="text-xl md:text-2xl font-bold text-center">
             {isSignUp ? "Create Account" : "DPO Vendor Compliance"}
