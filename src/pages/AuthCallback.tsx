@@ -12,7 +12,7 @@ const AuthCallback = () => {
         
         if (error) {
           console.error('Error getting session:', error);
-          navigate('/login');
+          navigate('/login?error=auth_callback_failed');
           return;
         }
 
@@ -53,7 +53,7 @@ const AuthCallback = () => {
         }
       } catch (error) {
         console.error('Auth callback error:', error);
-        navigate('/login');
+        navigate('/login?error=auth_callback_failed');
       }
     };
 

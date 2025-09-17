@@ -4,7 +4,7 @@ import { Building, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "../lib/superbase";
-import cdpoLogo from "@/assets/cdpo-logo.jpeg";
+import cdpoLogo from "@/assets/cdpo-logo-nobg.png";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const Landing = () => {
       <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
-          <img src={cdpoLogo} alt="CDPO Logo" className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6" />
+          <img src={cdpoLogo} alt="CDPO Logo" className="h-20 w-20 md:h-28 md:w-28 mx-auto mb-4 md:mb-6 drop-shadow-lg" />
           <h1 className="text-2xl md:text-4xl font-bold text-primary-foreground mb-3 md:mb-4 px-2">
             Vendor Data Protection Compliance Portal
           </h1>

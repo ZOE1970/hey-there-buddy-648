@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, Building } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, Building, Check } from "lucide-react";
 import { supabase } from '../lib/superbase';
-import cdpoLogo from "@/assets/cdpo-logo.jpeg";
+import cdpoLogo from "@/assets/cdpo-logo-nobg.png";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -14,6 +14,8 @@ const LoginPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -34,6 +36,33 @@ const LoginPage = () => {
     company: "",
     general: ""
   });
+
+  // Load remembered credentials on component mount
+  useEffect(() => {
+    const savedCredentials = localStorage.getItem('cdpo_remembered_credentials');
+    if (savedCredentials) {
+      try {
+        const parsed = JSON.parse(savedCredentials);
+        setFormData(prev => ({
+          ...prev,
+          email: parsed.email || '',
+          rememberMe: true
+        }));
+      } catch (error) {
+        console.error('Error loading saved credentials:', error);
+        localStorage.removeItem('cdpo_remembered_credentials');
+      }
+    }
+  }, []);
+
+  // Save or remove credentials based on remember me checkbox
+  const handleRememberMe = (email: string, remember: boolean) => {
+    if (remember && email) {
+      localStorage.setItem('cdpo_remembered_credentials', JSON.stringify({ email }));
+    } else {
+      localStorage.removeItem('cdpo_remembered_credentials');
+    }
+  };
 
   // Create user profile if it doesn't exist
   const createUserProfile = async (userId: string, email: string) => {
@@ -173,10 +202,10 @@ const LoginPage = () => {
       isValid = false;
     }
 
-    if (!formData.password) {
+    if (!showForgotPassword && !formData.password) {
       newErrors.password = "Password is required";
       isValid = false;
-    } else if (formData.password.length < 6) {
+    } else if (!showForgotPassword && formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
       isValid = false;
     }
@@ -224,6 +253,9 @@ const LoginPage = () => {
       }
 
       if (data.user) {
+        // Handle remember me functionality
+        handleRememberMe(formData.email, formData.rememberMe);
+        
         await redirectBasedOnRole(data.user.id, data.user.email!);
       }
     } catch (error: unknown) {
@@ -295,6 +327,47 @@ const LoginPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email) {
+      setErrors(prev => ({ ...prev, email: "Email is required", general: "" }));
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      setErrors(prev => ({ ...prev, email: "Email is invalid", general: "" }));
+      return;
+    }
+    
+    setLoading(true);
+    setErrors({ ...errors, general: "", email: "" });
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setResetEmailSent(true);
+    } catch (error: unknown) {
+      console.error('Password reset error:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Failed to send password reset email. Please try again.";
+      
+      setErrors(prev => ({ 
+        ...prev, 
+        general: errorMessage
+      }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     setErrors({ ...errors, general: "" });
@@ -331,6 +404,8 @@ const LoginPage = () => {
 
   const toggleSignUpMode = () => {
     setIsSignUp(!isSignUp);
+    setShowForgotPassword(false);
+    setResetEmailSent(false);
     setErrors({ 
       email: "", 
       password: "", 
@@ -343,12 +418,146 @@ const LoginPage = () => {
     });
   };
 
+  const toggleForgotPassword = () => {
+    setShowForgotPassword(!showForgotPassword);
+    setResetEmailSent(false);
+    setErrors({ 
+      email: "", 
+      password: "", 
+      confirmPassword: "", 
+      firstName: "", 
+      lastName: "", 
+      phone: "", 
+      company: "",
+      general: "" 
+    });
+  };
+
+  const backToLogin = () => {
+    setShowForgotPassword(false);
+    setResetEmailSent(false);
+    setErrors({ 
+      email: "", 
+      password: "", 
+      confirmPassword: "", 
+      firstName: "", 
+      lastName: "", 
+      phone: "", 
+      company: "",
+      general: "" 
+    });
+  };
+
+  // Render forgot password form
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4 md:p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1 p-4 md:p-6">
+            <div className="flex justify-center mb-2 md:mb-4">
+              <img src={cdpoLogo} alt="CDPO Logo" className="h-12 w-12 md:h-16 md:w-16" />
+            </div>
+            <CardTitle className="text-xl md:text-2xl font-bold text-center">
+              {resetEmailSent ? "Check Your Email" : "Reset Password"}
+            </CardTitle>
+            <CardDescription className="text-center text-xs md:text-sm">
+              {resetEmailSent 
+                ? "We've sent a password reset link to your email address"
+                : "Enter your email address to receive a password reset link"
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6">
+            {resetEmailSent ? (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                    <Check className="w-8 h-8 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-center text-sm text-muted-foreground">
+                  If an account with <strong>{formData.email}</strong> exists, you will receive a password reset email shortly.
+                </p>
+                <p className="text-center text-xs text-muted-foreground">
+                  Don't see the email? Check your spam folder or try again.
+                </p>
+                <div className="space-y-2">
+                  <Button 
+                    onClick={() => setResetEmailSent(false)}
+                    variant="outline" 
+                    className="w-full text-xs md:text-sm"
+                  >
+                    Send Another Email
+                  </Button>
+                  <Button 
+                    onClick={backToLogin}
+                    variant="link" 
+                    className="w-full text-xs md:text-sm"
+                  >
+                    Back to Sign In
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-xs md:text-sm">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-2 md:left-3 top-2.5 md:top-3 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="name@company.com"
+                      className="pl-7 md:pl-9 text-xs md:text-sm"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                      <AlertCircle className="h-3 w-3" /> {errors.email}
+                    </p>
+                  )}
+                </div>
+
+                {errors.general && (
+                  <div className="bg-destructive/15 text-destructive text-xs md:text-sm p-2 md:p-3 rounded-md flex items-center gap-2">
+                    <AlertCircle className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                    {errors.general}
+                  </div>
+                )}
+
+                <Button 
+                  type="submit" 
+                  className="w-full text-xs md:text-sm" 
+                  disabled={loading}
+                >
+                  {loading ? "Sending..." : "Send Reset Link"}
+                </Button>
+
+                <Button 
+                  type="button"
+                  variant="link" 
+                  className="w-full text-xs md:text-sm" 
+                  onClick={backToLogin}
+                >
+                  Back to Sign In
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4 md:p-6">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 p-4 md:p-6">
           <div className="flex justify-center mb-2 md:mb-4">
-            <img src={cdpoLogo} alt="CDPO Logo" className="h-12 w-12 md:h-16 md:w-16" />
+            <img src={cdpoLogo} alt="CDPO Logo" className="h-16 w-16 md:h-20 md:w-20 drop-shadow-lg" />
           </div>
           <CardTitle className="text-xl md:text-2xl font-bold text-center">
             {isSignUp ? "Create Account" : "DPO Vendor Compliance"}
@@ -490,7 +699,7 @@ const LoginPage = () => {
                   {showPassword ? (
                     <EyeOff className="h-3 w-3 md:h-4 md:w-4" />
                   ) : (
-                    <Eye className="h-3 w-3 md:h-4" />
+                    <Eye className="h-3 w-3 md:h-4 md:w-4" />
                   )}
                 </button>
               </div>
@@ -548,7 +757,12 @@ const LoginPage = () => {
                   />
                   <Label htmlFor="rememberMe" className="text-xs md:text-sm">Remember me</Label>
                 </div>
-                <Button variant="link" className="p-0 h-auto text-xs md:text-sm" type="button">
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto text-xs md:text-sm" 
+                  type="button"
+                  onClick={toggleForgotPassword}
+                >
                   Forgot password?
                 </Button>
               </div>
