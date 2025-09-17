@@ -26,26 +26,26 @@ const AdminReview = () => {
     const fetchSubmission = async () => {
       if (!vendorSlug) {
         console.log('No vendor slug provided');
+        toast({
+          title: "Error",
+          description: "No submission identifier provided.",
+          variant: "destructive"
+        });
+        navigate('/admin/dashboard');
         return;
       }
       
       console.log('Fetching submission with vendor slug:', vendorSlug);
       
       try {
-        // Try to find by vendor name slug first
-        const vendorName = vendorSlug.split('-').join(' ');
+        let submission = null;
         
-        let { data, error } = await supabase
-          .from('compliance_submissions')
-          .select('*')
-          .ilike('vendor_name', `%${vendorName}%`)
-          .limit(1)
-          .maybeSingle();
-
-        // If not found by name, try to extract ID from slug
-        if (!data && vendorSlug.includes('-')) {
+        // Method 1: Extract ID from end of slug (e.g. vendor-name-abc123def)
+        if (vendorSlug.includes('-')) {
           const parts = vendorSlug.split('-');
           const idPart = parts[parts.length - 1];
+          
+          console.log('Extracted ID part:', idPart);
           
           if (idPart && idPart.length >= 8) {
             const { data: idData, error: idError } = await supabase
@@ -55,21 +55,78 @@ const AdminReview = () => {
               .limit(1)
               .maybeSingle();
             
-            data = idData;
-            error = idError;
+            console.log('Query by ID result:', { data: idData, error: idError });
+            
+            if (idData && !idError) {
+              submission = idData;
+            }
+          }
+        }
+        
+        // Method 2: If ID method failed, try vendor name matching
+        if (!submission) {
+          const vendorName = vendorSlug.split('-').slice(0, -1).join(' ');
+          console.log('Trying vendor name:', vendorName);
+          
+          const { data: nameData, error: nameError } = await supabase
+            .from('compliance_submissions')
+            .select('*')
+            .ilike('vendor_name', `%${vendorName}%`)
+            .limit(5); // Get multiple matches to help with debugging
+          
+          console.log('Query by name result:', { data: nameData, error: nameError });
+          
+          if (nameData && nameData.length > 0 && !nameError) {
+            // If multiple matches, take the most recent one
+            submission = nameData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+          }
+        }
+        
+        // Method 3: Last resort - try to match the full slug as vendor name
+        if (!submission) {
+          const fullName = vendorSlug.replace(/-/g, ' ');
+          console.log('Trying full slug as name:', fullName);
+          
+          const { data: fullData, error: fullError } = await supabase
+            .from('compliance_submissions')
+            .select('*')
+            .ilike('vendor_name', `%${fullName}%`)
+            .limit(1)
+            .maybeSingle();
+          
+          console.log('Query by full name result:', { data: fullData, error: fullError });
+          
+          if (fullData && !fullError) {
+            submission = fullData;
           }
         }
 
-        console.log('Supabase query result:', { data, error });
-
-        if (error) throw error;
-        
-        if (!data) {
-          throw new Error('Submission not found');
+        if (!submission) {
+          console.error('No submission found for slug:', vendorSlug);
+          
+          // Show debug info
+          toast({
+            title: "Submission Not Found",
+            description: `Could not find submission for "${vendorSlug}". Check console for debug info.`,
+            variant: "destructive"
+          });
+          
+          // Fetch all submissions for debugging
+          const { data: allSubmissions } = await supabase
+            .from('compliance_submissions')
+            .select('id, vendor_name, service_name, created_at')
+            .limit(10);
+          
+          console.log('Available submissions for debugging:', allSubmissions);
+          
+          navigate('/admin/dashboard');
+          return;
         }
         
-        setSubmission(data);
-        setRiskLevel(data.risk_level);
+        console.log('Found submission:', submission);
+        setSubmission(submission);
+        setRiskLevel(submission.risk_level || 'medium');
+        
       } catch (error) {
         console.error('Error fetching submission:', error);
         toast({
@@ -106,8 +163,11 @@ const AdminReview = () => {
         risk_level: riskLevel,
         review_decision: decision,
         review_comments: comments,
-        reviewer_id: user.id
+        reviewer_id: user.id,
+        reviewed_at: new Date().toISOString()
       };
+
+      console.log('Updating submission with:', updates);
 
       const { error } = await supabase
         .from('compliance_submissions')
@@ -137,13 +197,13 @@ const AdminReview = () => {
   const getRiskBadge = (risk: string) => {
     switch (risk) {
       case "low":
-        return <Badge variant="outline" className="text-success border-success">Low Risk</Badge>;
+        return <Badge variant="outline" className="text-green-600 border-green-600">Low Risk</Badge>;
       case "medium":
-        return <Badge variant="outline" className="text-warning border-warning">Medium Risk</Badge>;
+        return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Medium Risk</Badge>;
       case "high":
-        return <Badge variant="outline" className="text-destructive border-destructive">High Risk</Badge>;
+        return <Badge variant="outline" className="text-red-600 border-red-600">High Risk</Badge>;
       default:
-        return null;
+        return <Badge variant="outline">{risk || 'Unknown'}</Badge>;
     }
   };
 
@@ -153,6 +213,7 @@ const AdminReview = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading submission details...</p>
+          <p className="text-xs text-muted-foreground mt-2">Slug: {vendorSlug}</p>
         </div>
       </div>
     );
@@ -161,8 +222,9 @@ const AdminReview = () => {
   if (!submission) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Submission not found.</p>
+        <div className="text-center max-w-md">
+          <p className="text-muted-foreground mb-4">Submission not found for slug: <code className="bg-muted px-2 py-1 rounded">{vendorSlug}</code></p>
+          <p className="text-xs text-muted-foreground mb-4">Check the browser console for debugging information.</p>
           <Button onClick={() => navigate('/admin/dashboard')}>Back to Dashboard</Button>
         </div>
       </div>
@@ -245,6 +307,9 @@ const AdminReview = () => {
                     {(formData.data_processing?.data_types || []).map((type: string, index: number) => (
                       <Badge key={index} variant="secondary">{type}</Badge>
                     ))}
+                    {(!formData.data_processing?.data_types || formData.data_processing.data_types.length === 0) && (
+                      <span className="text-muted-foreground">No data types specified</span>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -275,19 +340,25 @@ const AdminReview = () => {
                   <Label className="text-sm font-medium text-muted-foreground">Security Controls</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {(formData.security_measures?.security_measures || []).map((measure: string, index: number) => (
-                      <Badge key={index} variant="outline" className="text-success border-success">
+                      <Badge key={index} variant="outline" className="text-green-600 border-green-600">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         {measure}
                       </Badge>
                     ))}
+                    {(!formData.security_measures?.security_measures || formData.security_measures.security_measures.length === 0) && (
+                      <span className="text-muted-foreground">No security measures specified</span>
+                    )}
                   </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Certifications</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {(formData.security_measures?.certifications || []).map((cert: string, index: number) => (
-                      <Badge key={index} variant="outline" className="text-primary border-primary">{cert}</Badge>
+                      <Badge key={index} variant="outline" className="text-blue-600 border-blue-600">{cert}</Badge>
                     ))}
+                    {(!formData.security_measures?.certifications || formData.security_measures.certifications.length === 0) && (
+                      <span className="text-muted-foreground">No certifications specified</span>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -312,21 +383,21 @@ const AdminReview = () => {
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="approved" id="approved" />
                       <Label htmlFor="approved" className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-success" />
+                        <CheckCircle className="h-4 w-4 text-green-600" />
                         Approve
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="rejected" id="rejected" />
                       <Label htmlFor="rejected" className="flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-destructive" />
+                        <XCircle className="h-4 w-4 text-red-600" />
                         Reject
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="conditional" id="conditional" />
                       <Label htmlFor="conditional" className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-warning" />
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
                         Approve with Conditions
                       </Label>
                     </div>
@@ -364,7 +435,7 @@ const AdminReview = () => {
 
                 <Button 
                   onClick={handleDecision} 
-                  className="w-full bg-gradient-primary"
+                  className="w-full"
                   disabled={!decision || !riskLevel || submitting}
                 >
                   {submitting ? "Submitting..." : "Submit Decision"}
@@ -386,19 +457,19 @@ const AdminReview = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <Label className="text-sm text-muted-foreground">Data Processing</Label>
-                  <Badge variant="outline" className="text-warning border-warning">
+                  <Badge variant="outline" className={formData.general_info?.processes_personal_data === 'yes' ? 'text-yellow-600 border-yellow-600' : 'text-gray-600 border-gray-600'}>
                     {formData.general_info?.processes_personal_data === 'yes' ? 'Yes' : 'Unknown'}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <Label className="text-sm text-muted-foreground">University Access</Label>
-                  <Badge variant="outline" className="text-warning border-warning">
+                  <Badge variant="outline" className={formData.general_info?.university_access === 'yes' ? 'text-yellow-600 border-yellow-600' : 'text-gray-600 border-gray-600'}>
                     {formData.general_info?.university_access === 'yes' ? 'Yes' : 'Unknown'}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <Label className="text-sm text-muted-foreground">Has DPO</Label>
-                  <Badge variant="outline" className="text-success border-success">
+                  <Badge variant="outline" className={formData.data_processing?.has_dpo === 'yes' ? 'text-green-600 border-green-600' : 'text-gray-600 border-gray-600'}>
                     {formData.data_processing?.has_dpo === 'yes' ? 'Yes' : 'Unknown'}
                   </Badge>
                 </div>

@@ -42,6 +42,14 @@ const AdminDashboard = () => {
     }
   };
 
+  // Generate consistent vendor slug for navigation
+  const generateVendorSlug = (submission) => {
+    // Create slug from vendor name and use first 8 characters of submission ID
+    const vendorSlug = submission.vendor_name.toLowerCase().replace(/\s+/g, '-');
+    const idPrefix = submission.id.split('-')[0]; // Get first part of UUID
+    return `${vendorSlug}-${idPrefix}`;
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
@@ -50,6 +58,8 @@ const AdminDashboard = () => {
         return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
       case "rejected":
         return <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
+      case "conditional":
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Conditional</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -209,6 +219,7 @@ const AdminDashboard = () => {
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="conditional">Conditional</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -240,7 +251,7 @@ const AdminDashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredSubmissions.map((submission) => (
-                    <TableRow key={submission.id} className="hover:bg-gray-50 cursor-pointer">
+                    <TableRow key={submission.id} className="hover:bg-gray-50">
                       <TableCell className="font-medium">{submission.vendor_name}</TableCell>
                       <TableCell className="text-sm">{submission.service_name}</TableCell>
                       <TableCell className="text-sm">
@@ -255,7 +266,7 @@ const AdminDashboard = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => navigate(`/admin/review/${submission.vendor_name.toLowerCase().replace(/\s+/g, '-')}-${submission.id.split('-')[0]}`)}
+                          onClick={() => navigate(`/admin/review/${generateVendorSlug(submission)}`)}
                           className="flex items-center gap-1"
                         >
                           <Eye className="h-3 w-3" />
@@ -308,7 +319,7 @@ const AdminDashboard = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => navigate(`/admin/review/${submission.vendor_name.toLowerCase().replace(/\s+/g, '-')}-${submission.id.split('-')[0]}`)}
+                          onClick={() => navigate(`/admin/review/${generateVendorSlug(submission)}`)}
                           className="w-full flex items-center gap-2 text-xs"
                         >
                           <Eye className="h-3 w-3" />
@@ -371,7 +382,7 @@ const AdminDashboard = () => {
                             variant="destructive" 
                             size="sm" 
                             className="flex-1 sm:flex-none"
-                            onClick={() => navigate(`/admin/review/${submission.vendor_name.toLowerCase().replace(/\s+/g, '-')}-${submission.id.split('-')[0]}`)}
+                            onClick={() => navigate(`/admin/review/${generateVendorSlug(submission)}`)}
                           >
                             Review Now
                           </Button>

@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, FileText, Download, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/superbase";
+import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
@@ -32,7 +33,13 @@ const VendorDashboard = () => {
     const fetchSubmissions = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          console.log('No authenticated user found');
+          navigate('/login');
+          return;
+        }
+
+        console.log('Fetching submissions for user:', user.email);
 
         const { data, error } = await supabase
           .from('compliance_submissions')
@@ -40,10 +47,20 @@ const VendorDashboard = () => {
           .eq('vendor_email', user.email)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
+
+        console.log('Fetched submissions:', data);
         setSubmissions(data || []);
       } catch (error) {
         console.error('Error fetching submissions:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your submissions. Please refresh the page.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -61,6 +78,7 @@ const VendorDashboard = () => {
           table: 'compliance_submissions' 
         }, 
         () => {
+          console.log('Submission updated, refetching...');
           fetchSubmissions();
         }
       )
@@ -69,7 +87,16 @@ const VendorDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [navigate]);
+
+  const handleViewSubmission = (submission) => {
+    // For now, show a detailed view in a toast/modal
+    // You can later implement a proper view page
+    toast({
+      title: `${submission.service_name} Details`,
+      description: `Status: ${submission.status} | Submitted: ${new Date(submission.created_at).toLocaleDateString()}`,
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -79,6 +106,8 @@ const VendorDashboard = () => {
         return <Badge variant="secondary" className="text-xs"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
       case "rejected":
         return <Badge variant="destructive" className="text-xs"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
+      case "conditional":
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs">Conditional</Badge>;
       default:
         return <Badge variant="secondary" className="text-xs">{status}</Badge>;
     }
@@ -160,7 +189,16 @@ const VendorDashboard = () => {
               {loading ? (
                 <div className="p-8 text-center text-muted-foreground">Loading submissions...</div>
               ) : submissions.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">No submissions yet</div>
+                <div className="p-8 text-center text-muted-foreground">
+                  <div className="mb-4">No submissions yet</div>
+                  <Button 
+                    onClick={() => navigate('/vendor/form')}
+                    className="bg-gradient-primary"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Form
+                  </Button>
+                </div>
               ) : (
                 submissions.map((submission) => (
                   <div key={submission.id} className="border-b last:border-b-0 p-3 mx-3">
@@ -175,7 +213,12 @@ const VendorDashboard = () => {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-6">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs px-2 py-1 h-6"
+                        onClick={() => handleViewSubmission(submission)}
+                      >
                         <FileText className="h-3 w-3 mr-1" />
                         View
                       </Button>
@@ -218,7 +261,16 @@ const VendorDashboard = () => {
                   ) : submissions.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No submissions yet
+                        <div className="space-y-4">
+                          <div>No submissions yet</div>
+                          <Button 
+                            onClick={() => navigate('/vendor/form')}
+                            className="bg-gradient-primary"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Your First Form
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -232,7 +284,12 @@ const VendorDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-7">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs px-2 py-1 h-7"
+                              onClick={() => handleViewSubmission(submission)}
+                            >
                               <FileText className="h-3 w-3 mr-1" />
                               View
                             </Button>
