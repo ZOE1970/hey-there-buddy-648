@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Phone, Building, Check, Loader2 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import cdpoLogo from "@/assets/cdpo-logo-nobg.png";
 
 const LoginPage = () => {
@@ -83,7 +84,7 @@ const LoginPage = () => {
   }, []);
 
   // Handle OAuth user profile creation/update
-  const handleOAuthUserProfile = async (user: unknown, isNewUser: boolean) => {
+  const handleOAuthUserProfile = async (user: SupabaseUser, isNewUser: boolean) => {
     try {
       const { profile, error: fetchError } = await fetchUserProfile(user.id);
       
