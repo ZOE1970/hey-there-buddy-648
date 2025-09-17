@@ -67,7 +67,12 @@ const AuthCallback = () => {
 
     const redirectByRole = async (userId: string, userEmail: string | null) => {
       try {
-        // First, check if profile exists
+        let userRole = 'vendor'; // default role
+        
+        // Give a moment for the trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Check if profile exists
         const { data: existingProfile, error: fetchError } = await supabase
           .from('profiles')
           .select('role, id')
@@ -76,27 +81,33 @@ const AuthCallback = () => {
 
         if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found"
           console.error('Error fetching profile:', fetchError);
-          // Continue anyway, try to create profile
         }
 
-        let userRole = 'vendor'; // default role
-
         if (!existingProfile) {
-          // Profile doesn't exist, create it
+          // Profile doesn't exist, create it manually
+          console.log('Creating profile manually for user:', userId);
           try {
+            // Get user data from auth
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            
+            const profileData = {
+              id: userId,
+              email: userEmail || user?.email || '',
+              role: 'vendor',
+              first_name: user?.user_metadata?.first_name || user?.user_metadata?.given_name || '',
+              last_name: user?.user_metadata?.last_name || user?.user_metadata?.family_name || '',
+              avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null,
+              created_at: new Date().toISOString(),
+            };
+
             const { data: newProfile, error: insertError } = await supabase
               .from('profiles')
-              .insert({
-                id: userId,
-                email: userEmail || '',
-                role: 'vendor',
-                created_at: new Date().toISOString(),
-              })
+              .insert(profileData)
               .select('role')
               .single();
 
             if (insertError) {
-              console.error('Error creating profile:', insertError);
+              console.error('Error creating profile manually:', insertError);
               
               // If it's a unique violation, the user might already exist
               if (insertError.code === '23505') { // unique violation
@@ -124,6 +135,7 @@ const AuthCallback = () => {
         }
 
         // Redirect based on role
+        console.log('Redirecting user with role:', userRole);
         if (userRole === 'superadmin') {
           navigate('/admin/dashboard');
         } else {
