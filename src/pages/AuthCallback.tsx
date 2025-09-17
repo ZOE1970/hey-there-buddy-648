@@ -27,7 +27,8 @@ const AuthCallback = () => {
         }
 
         const role = profile?.role ?? 'vendor';
-        navigate(role === 'superadmin' ? '/admin/dashboard' : '/vendor/dashboard');
+        // Always redirect to vendor dashboard for new users (including Google signup)
+        navigate('/vendor/dashboard');
       } catch (err) {
         console.error('Redirect role error:', err);
         navigate('/vendor/dashboard');

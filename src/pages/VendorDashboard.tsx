@@ -2,13 +2,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Plus, FileText, Download, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/superbase";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [profileForm, setProfileForm] = useState({
+    first_name: '',
+    last_name: '',
+    company: '',
+    phone: ''
+  });
 
   // Logout function - clears session and redirects to landing page
   const handleLogout = async () => {
@@ -27,6 +40,39 @@ const VendorDashboard = () => {
 
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Check user profile completeness and show modal if needed
+  useEffect(() => {
+    const checkUserProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        setUserProfile(profile);
+        
+        // Check if profile is incomplete (missing key fields)
+        if (profile && (!profile.first_name || !profile.company || !profile.phone)) {
+          setProfileForm({
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            company: profile.company || '',
+            phone: profile.phone || ''
+          });
+          setShowProfileModal(true);
+        }
+      } catch (error) {
+        console.error('Error checking user profile:', error);
+      }
+    };
+
+    checkUserProfile();
+  }, []);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -70,6 +116,38 @@ const VendorDashboard = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const handleProfileSubmit = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          first_name: profileForm.first_name,
+          last_name: profileForm.last_name,
+          company: profileForm.company,
+          phone: profileForm.phone
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setShowProfileModal(false);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -315,6 +393,73 @@ const VendorDashboard = () => {
 
       {/* Add padding to bottom on mobile to account for fixed action bar */}
       <div className="h-20 sm:hidden"></div>
+
+      {/* Profile Completion Modal */}
+      <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Complete Your Profile</DialogTitle>
+            <DialogDescription>
+              Please provide some additional information to complete your vendor profile.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name *</Label>
+                <Input
+                  id="first_name"
+                  value={profileForm.first_name}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, first_name: e.target.value }))}
+                  placeholder="Enter first name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  value={profileForm.last_name}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, last_name: e.target.value }))}
+                  placeholder="Enter last name"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company">Company Name *</Label>
+              <Input
+                id="company"
+                value={profileForm.company}
+                onChange={(e) => setProfileForm(prev => ({ ...prev, company: e.target.value }))}
+                placeholder="Enter company name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={profileForm.phone}
+                onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Enter phone number"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowProfileModal(false)}
+            >
+              Skip for now
+            </Button>
+            <Button 
+              onClick={handleProfileSubmit}
+              disabled={!profileForm.first_name || !profileForm.company || !profileForm.phone}
+            >
+              Save Profile
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
