@@ -49,7 +49,7 @@ const VendorDashboard = () => {
         if (!user) return;
 
         const { data: profile } = await supabase
-          .from('user_profiles')
+          .from('profiles')
           .select('*')
           .eq('id', user.id)
           .maybeSingle();
@@ -123,7 +123,7 @@ const VendorDashboard = () => {
       if (!user) return;
 
       const { error } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .update({
           first_name: profileForm.first_name,
           last_name: profileForm.last_name,

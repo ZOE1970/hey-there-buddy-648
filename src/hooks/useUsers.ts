@@ -41,7 +41,7 @@ export const useUsers = () => {
       const { data: statsData, error: statsError } = await supabase
         .from('user_stats')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (statsError && statsError.code !== 'PGRST116') {
         console.warn('Could not fetch user stats:', statsError);

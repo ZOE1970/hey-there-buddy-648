@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
               .from('profiles')
               .select('role')
               .eq('id', session.user.id)
-              .single();
+              .maybeSingle();
 
             // Handle RLS recursion error - default to vendor role
             if (error?.code === '42P17') {

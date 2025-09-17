@@ -18,7 +18,7 @@ const Landing = () => {
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (profile?.role === 'superadmin' || profile?.role === 'limited_admin') {
           navigate('/admin/dashboard');
