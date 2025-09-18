@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from '@/integrations/supabase/client';
 import { useSubmissions } from '@/hooks/useSubmissions';
+import { useAuth } from '@/hooks/useAuth';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const { submissions, loading, error } = useSubmissions();
+  const { user } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -118,7 +120,7 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">DPO Vendor Compliance</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Welcome {user?.first_name || user?.email || 'User'}</h1>
               <p className="text-muted-foreground mt-1 text-sm sm:text-base">Review and manage vendor compliance submissions</p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">

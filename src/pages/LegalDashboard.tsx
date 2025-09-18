@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from '@/integrations/supabase/client';
 import { useSubmissions } from '@/hooks/useSubmissions';
+import { useAuth } from '@/hooks/useAuth';
 
 const LegalDashboard = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const LegalDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const { submissions, loading, error } = useSubmissions();
+  const { user } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -121,7 +123,7 @@ const LegalDashboard = () => {
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
                 <Scale className="h-6 w-6 text-primary" />
-                Legal Review Dashboard
+                Welcome {user?.first_name || user?.email || 'User'}
               </h1>
               <p className="text-muted-foreground mt-1 text-sm sm:text-base">Review vendor compliance submissions for legal assessment</p>
             </div>

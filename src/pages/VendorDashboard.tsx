@@ -10,10 +10,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({
@@ -175,7 +177,9 @@ const VendorDashboard = () => {
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Vendor Dashboard</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+                Welcome {user?.first_name || user?.email || 'User'}
+              </h1>
               <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Manage your compliance submissions</p>
             </div>
             {/* Desktop buttons */}
