@@ -224,6 +224,7 @@ const LoginPage = () => {
       if (!profile) {
         try {
           const newProfile = await createUserProfile(userId, userEmail);
+          
           // Redirect based on the newly created profile's role
           if (newProfile?.role === 'superadmin') {
             navigate('/admin/dashboard');
@@ -239,13 +240,18 @@ const LoginPage = () => {
         return;
       }
 
-      // Handle existing profile - check for superadmin first
-      if (profile?.role === 'superadmin' || userEmail === 'dpo@run.edu.ng') {
-        navigate('/admin/dashboard');
-      } else if (profile?.role === 'legal' || ['legal@run.edu.ng','vc@run.edu.ng','councilaffairs@run.edu.ng','registrar@run.edu.ng'].includes(userEmail)) {
-        navigate('/legal/dashboard');
-      } else {
-        navigate('/vendor/dashboard');
+      // Handle existing profile - trust the database role completely
+      switch (profile.role) {
+        case 'superadmin':
+          navigate('/admin/dashboard');
+          break;
+        case 'legal':
+          navigate('/legal/dashboard');
+          break;
+        case 'vendor':
+        default:
+          navigate('/vendor/dashboard');
+          break;
       }
     } catch (error) {
       console.error('Error redirecting:', error);
@@ -364,12 +370,20 @@ const LoginPage = () => {
     setErrors({ ...errors, general: "" });
     
     try {
+      // Determine role based on email
+      let userRole = 'vendor';
+      if (formData.email === 'dpo@run.edu.ng') {
+        userRole = 'superadmin';
+      } else if (['legal@run.edu.ng', 'vc@run.edu.ng', 'councilaffairs@run.edu.ng', 'registrar@run.edu.ng'].includes(formData.email)) {
+        userRole = 'legal';
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
-            role: 'vendor',
+            role: userRole,
             first_name: formData.firstName,
             last_name: formData.lastName,
             phone: formData.phone,
