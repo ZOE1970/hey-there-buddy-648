@@ -23,6 +23,7 @@ import LegalDashboard from "./pages/LegalDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import Footer from "./components/Footer";
+import RoleBasedRedirect from "./components/RoleBasedRedirect";
 
 const queryClient = new QueryClient();
 
@@ -38,7 +39,8 @@ const AppContent = () => {
         <Toaster />
         <Sonner />
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<RoleBasedRedirect />} />
+          <Route path="/landing" element={<Landing />} />
           <Route path="/login" element={<LoginPage />} />
           
           {/* Protected Vendor Routes */}

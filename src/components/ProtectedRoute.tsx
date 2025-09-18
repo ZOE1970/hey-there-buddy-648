@@ -44,10 +44,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
                 navigate('/login');
                 return;
               }
-            } else if (error || (requiredRole !== 'vendor' && 
-              !(profile?.role === 'superadmin' || 
-                profile?.role === 'limited_admin' || 
-                (requiredRole === 'legal' && (profile?.role === 'legal' || legalEmails.includes(session.user.email!)))))) {
+            } else if (error || !hasRequiredRole(profile?.role, requiredRole, session.user.email!, legalEmails)) {
               navigate('/login');
               return;
             }
@@ -60,7 +57,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
               'councilaffairs@run.edu.ng',
               'registrar@run.edu.ng'
             ];
-            if (requiredRole !== 'vendor' && !(requiredRole === 'legal' && legalEmails.includes(session.user.email!))) {
+            if (requiredRole !== 'vendor' && !hasRequiredRole('vendor', requiredRole, session.user.email!, legalEmails)) {
               navigate('/login');
               return;
             }
@@ -76,6 +73,20 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
     checkAuth();
   }, [navigate, requiredRole]);
+
+  // Helper function to check if user has required role
+  const hasRequiredRole = (userRole: string | undefined, requiredRole: string, userEmail: string, legalEmails: string[]) => {
+    switch (requiredRole) {
+      case 'superadmin':
+        return userRole === 'superadmin' || userRole === 'limited_admin';
+      case 'legal':
+        return userRole === 'legal' || legalEmails.includes(userEmail);
+      case 'vendor':
+        return true; // All authenticated users can access vendor routes
+      default:
+        return false;
+    }
+  };
 
   if (isLoading) {
     return (

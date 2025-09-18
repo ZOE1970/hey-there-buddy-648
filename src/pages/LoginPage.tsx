@@ -828,7 +828,7 @@ const LoginPage = () => {
                 </div>
                 {errors.confirmPassword && (
                   <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="h-3 w-3" /> {errors.conf confirmPassword}
+                    <AlertCircle className="h-3 w-3" /> {errors.confirmPassword}
                   </p>
                 )}
               </div>
