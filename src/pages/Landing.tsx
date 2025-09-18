@@ -9,29 +9,7 @@ import runLogo from "@/assets/run-university-logo.png";
 const Landing = () => {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check user role and redirect accordingly
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (profile?.role === 'superadmin' || profile?.role === 'limited_admin') {
-          navigate('/admin/dashboard');
-        } else if (profile?.role === 'legal' || ['legal@run.edu.ng','vc@run.edu.ng','councilaffairs@run.edu.ng','registrar@run.edu.ng'].includes(session.user.email || '')) {
-          navigate('/legal/dashboard');
-        } else {
-          navigate('/vendor/dashboard');
-        }
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
+  // No automatic redirect - show landing page for everyone
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -77,9 +55,9 @@ const Landing = () => {
               <Button 
                 className="w-full mt-4 md:mt-6" 
                 size="lg"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/dashboard')}
               >
-                Access Vendor Portal
+                Access Portal
               </Button>
             </CardContent>
           </Card>
