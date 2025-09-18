@@ -8,6 +8,7 @@ import LoginPage from "./pages/LoginPage";
 import VendorDashboard from "./pages/VendorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminReview from "./pages/AdminReview";
+import LegalReview from "./pages/LegalReview";
 import UserManagement from "./pages/UserManagement";
 import ComplianceForm from "./pages/ComplianceForm";
 import SubmissionSuccess from "./pages/SubmissionSuccess";
@@ -76,11 +77,11 @@ const AppContent = () => {
               <LegalDashboard />
             </ProtectedRoute>
           } />
-          <Route path="/legal/review/:vendorSlug" element={
-            <ProtectedRoute requiredRole="legal">
-              <AdminReview />
-            </ProtectedRoute>
-          } />
+           <Route path="/legal/review/:vendorSlug" element={
+             <ProtectedRoute requiredRole="legal">
+               <LegalReview />
+             </ProtectedRoute>
+           } />
           
           {/* Public Routes */}
           <Route path="/auth/callback" element={<AuthCallback />} />
