@@ -70,36 +70,39 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           company: string | null
           created_at: string | null
-          email: string
+          email: string | null
           first_name: string | null
           id: string
           last_name: string | null
           phone: string | null
-          role: string
+          role: string | null
           updated_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
           company?: string | null
           created_at?: string | null
-          email: string
+          email?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
           phone?: string | null
-          role: string
+          role?: string | null
           updated_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
           company?: string | null
           created_at?: string | null
-          email?: string
+          email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
           phone?: string | null
-          role?: string
+          role?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -190,14 +193,6 @@ export type Database = {
           id?: string | null
           last_name?: string | null
           role?: string | null
-        }
-        Relationships: []
-      }
-      user_stats: {
-        Row: {
-          admin_count: number | null
-          total_users: number | null
-          vendor_count: number | null
         }
         Relationships: []
       }
