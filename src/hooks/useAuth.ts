@@ -58,23 +58,64 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const getPermissions = (role: string) => {
+    switch (role) {
+      case 'superadmin':
+        return {
+          manage_users: true,
+          delete_users: true,
+          view_all_data: true,
+          export_data: true,
+          system_settings: true,
+          approve_forms: true,
+          print_certificate: true,
+          download_data: true,
+        };
+      case 'limited_admin':
+        return {
+          manage_users: true,
+          delete_users: false,
+          view_all_data: true,
+          export_data: true,
+          system_settings: false,
+          approve_forms: false,
+          print_certificate: false,
+          download_data: false,
+        };
+      case 'legal':
+        return {
+          manage_users: false,
+          delete_users: false,
+          view_all_data: true,
+          export_data: true,
+          system_settings: false,
+          approve_forms: false,
+          print_certificate: true,
+          download_data: true,
+        };
+      case 'vendor':
+        return {
+          manage_users: false,
+          delete_users: false,
+          view_own_data: true,
+          upload_documents: true,
+          view_all_data: false,
+          export_data: false,
+          system_settings: false,
+          approve_forms: false,
+          print_certificate: false,
+          download_data: false,
+        };
+      default:
+        return {};
+    }
+  };
+
   const hasPermission = (permission: string) => {
     if (!user) return false;
     
-    switch (permission) {
-      case 'download_data':
-        return user.role === 'superadmin' || user.role === 'legal';
-      case 'approve_forms':
-        return user.role === 'superadmin';
-      case 'view_all':
-        return user.role === 'superadmin' || user.role === 'limited_admin' || user.role === 'legal';
-      case 'manage_users':
-        return user.role === 'superadmin';
-      case 'print_certificate':
-        return user.role === 'superadmin' || user.role === 'legal';
-      default:
-        return false;
-    }
+    const permissions = getPermissions(user.role);
+    return permissions[permission as keyof typeof permissions] || false;
   };
 
   return {
