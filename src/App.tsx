@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Landing from "./pages/Landing";
 import LoginPage from "./pages/LoginPage";
 import VendorDashboard from "./pages/VendorDashboard";
@@ -14,18 +14,24 @@ import SubmissionSuccess from "./pages/SubmissionSuccess";
 import CertificateViewer from "./pages/CertificateViewer";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
+import LegalDashboard from "./pages/LegalDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
+import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
+// Component to conditionally render the footer
+const AppContent = () => {
+  const location = useLocation();
+  const hideFooterPaths = ['/login']; // Add signup path if needed
+  const shouldShowFooter = !hideFooterPaths.includes(location.pathname);
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <div className="flex-grow">
         <Toaster />
         <Sonner />
-      <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<LoginPage />} />
@@ -64,12 +70,31 @@ const App = () => (
             </ProtectedRoute>
           } />
           
+          {/* Protected Legal Routes */}
+          <Route path="/legal/dashboard" element={
+            <ProtectedRoute requiredRole="legal">
+              <LegalDashboard />
+            </ProtectedRoute>
+          } />
+          
           {/* Public Routes */}
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/certificate/:id" element={<CertificateViewer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
+      </div>
+      {shouldShowFooter && <Footer />}
+    </div>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

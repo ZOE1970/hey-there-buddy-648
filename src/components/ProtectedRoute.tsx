@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'vendor' | 'superadmin' | 'limited_admin';
+  requiredRole?: 'vendor' | 'superadmin' | 'limited_admin' | 'legal';
 }
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
@@ -37,7 +37,10 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
                 navigate('/login');
                 return;
               }
-            } else if (error || (requiredRole !== 'vendor' && !(profile?.role === 'superadmin' || profile?.role === 'limited_admin'))) {
+            } else if (error || (requiredRole !== 'vendor' && 
+              !(profile?.role === 'superadmin' || 
+                profile?.role === 'limited_admin' || 
+                (requiredRole === 'legal' && (profile?.role === 'legal' || session.user.email === 'legal@run.edu.ng'))))) {
               navigate('/login');
               return;
             }
