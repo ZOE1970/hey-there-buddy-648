@@ -88,6 +88,7 @@ const VendorDashboard = () => {
 
         if (error) throw error;
         setSubmissions(data || []);
+        console.log('Vendor submissions fetched:', data?.length || 0);
       } catch (error) {
         console.error('Error fetching submissions:', error);
       } finally {
@@ -106,14 +107,19 @@ const VendorDashboard = () => {
           schema: 'public', 
           table: 'compliance_submissions' 
         }, 
-        () => {
+        (payload) => {
+          console.log('Real-time change detected:', payload);
           fetchSubmissions();
         }
       )
       .subscribe();
 
+    // Set up a fallback interval to refresh data every 30 seconds
+    const interval = setInterval(fetchSubmissions, 30000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 

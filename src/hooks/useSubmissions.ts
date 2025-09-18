@@ -35,6 +35,7 @@ export const useSubmissions = () => {
       
       setSubmissions(data || []);
       setError(null);
+      console.log('Fetched submissions:', data?.length || 0);
     } catch (err) {
       console.error('Error fetching submissions:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch submissions');
@@ -45,6 +46,30 @@ export const useSubmissions = () => {
 
   useEffect(() => {
     fetchSubmissions();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('admin-submissions')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'compliance_submissions' 
+        }, 
+        (payload) => {
+          console.log('Admin real-time change detected:', payload);
+          fetchSubmissions();
+        }
+      )
+      .subscribe();
+
+    // Set up a fallback interval to refresh data every 30 seconds
+    const interval = setInterval(fetchSubmissions, 30000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, []);
 
   const updateSubmission = async (
