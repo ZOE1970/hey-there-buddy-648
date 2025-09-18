@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, FileText, Download, Clock, CheckCircle, XCircle, LogOut } from "lucide-react";
+import { Plus, FileText, Download, Clock, CheckCircle, XCircle, LogOut, FileCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
@@ -171,22 +171,30 @@ const VendorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header - Clean on mobile, buttons on desktop */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
-                Welcome {user?.role === 'superadmin' ? 'Data Protection Officer' : (user?.first_name || user?.email || 'User')}
-              </h1>
-              <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Manage your compliance submissions</p>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      {/* Professional Header */}
+      <div className="bg-white border-b shadow-lg">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileCheck className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">
+                    Welcome {user?.role === 'superadmin' ? 'Data Protection Officer' : (user?.first_name || user?.email || 'User')}
+                  </h1>
+                  <p className="text-muted-foreground text-lg">Vendor Compliance Dashboard</p>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-base max-w-2xl">Submit and track your data protection compliance forms with ease</p>
             </div>
-            {/* Desktop buttons */}
-            <div className="hidden sm:flex gap-3">
+            {/* Professional Action Buttons */}
+            <div className="flex gap-3 w-full lg:w-auto">
               <Button 
                 onClick={() => navigate('/vendor/form')}
-                className="bg-gradient-primary text-sm px-3 py-2 h-9"
+                className="flex-1 lg:flex-none bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 New Form
@@ -194,7 +202,7 @@ const VendorDashboard = () => {
               <Button 
                 onClick={handleLogout}
                 variant="outline"
-                className="text-sm px-3 py-2 h-9"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout

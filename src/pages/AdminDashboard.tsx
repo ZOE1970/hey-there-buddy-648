@@ -15,7 +15,8 @@ import {
   Filter,
   X,
   LogOut,
-  Users
+  Users,
+  Shield
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -126,27 +127,38 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      {/* Professional Header */}
+      <div className="bg-white border-b shadow-lg">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Welcome {user?.role === 'superadmin' ? 'Data Protection Officer' : (user?.first_name || user?.email || 'User')}</h1>
-              <p className="text-muted-foreground mt-1 text-sm sm:text-base">Review and manage vendor compliance submissions</p>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Shield className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">
+                    Welcome {user?.role === 'superadmin' ? 'Data Protection Officer' : (user?.first_name || user?.email || 'User')}
+                  </h1>
+                  <p className="text-muted-foreground text-lg">Administrative Dashboard</p>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-base max-w-2xl">Comprehensive management of vendor compliance and user accounts</p>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            {/* Professional Action Buttons */}
+            <div className="flex gap-3 w-full lg:w-auto">
               <Button 
                 variant="outline" 
-                className="flex items-center gap-2"
+                className="flex-1 lg:flex-none hover:bg-primary/5 border-primary/20"
                 onClick={() => navigate('/admin/users')}
               >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Users</span>
+                <Users className="h-4 w-4 mr-2" />
+                Users
               </Button>
               <Button 
                 variant="outline" 
-                className="flex items-center gap-2"
+                className="flex-1 lg:flex-none hover:bg-blue-50 border-blue-200"
                 onClick={() => {
                   const csvContent = "data:text/csv;charset=utf-8," 
                     + "Vendor,Service,Status,Risk Level,Submitted,Reviewed\n"
@@ -162,15 +174,8 @@ const AdminDashboard = () => {
                   document.body.removeChild(link);
                 }}
               >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="sm:hidden"
-                onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-              >
-                {isFiltersOpen ? <X className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+                <Download className="h-4 w-4 mr-2" />
+                Export
               </Button>
             </div>
           </div>

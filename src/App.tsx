@@ -39,8 +39,8 @@ const AppContent = () => {
         <Toaster />
         <Sonner />
         <Routes>
-          <Route path="/" element={<RoleBasedRedirect />} />
-          <Route path="/landing" element={<Landing />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/dashboard" element={<RoleBasedRedirect />} />
           <Route path="/login" element={<LoginPage />} />
           
           {/* Protected Vendor Routes */}

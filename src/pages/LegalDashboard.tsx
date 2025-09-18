@@ -115,17 +115,24 @@ const LegalDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      {/* Professional Header */}
+      <div className="bg-white border-b shadow-lg">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-                <Scale className="h-6 w-6 text-primary" />
-                Welcome {user?.role === 'superadmin' ? 'Data Protection Officer' : (user?.first_name || user?.email || 'User')}
-              </h1>
-              <p className="text-muted-foreground mt-1 text-sm sm:text-base">Review vendor compliance submissions for legal assessment</p>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Scale className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">
+                    Welcome {user?.role === 'superadmin' ? 'Data Protection Officer' : (user?.first_name || user?.email || 'User')}
+                  </h1>
+                  <p className="text-muted-foreground text-lg">Legal Review Dashboard</p>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-base max-w-2xl">Review vendor compliance submissions for comprehensive legal assessment</p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <Button 
