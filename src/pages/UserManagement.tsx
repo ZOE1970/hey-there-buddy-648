@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, 
   Search, 
@@ -13,17 +14,21 @@ import {
   Trash2,
   User as UserIcon,
   Mail,
-  Building
+  Building,
+  UserPlus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useUsers } from "@/hooks/useUsers";
 import { toast } from "@/hooks/use-toast";
+import { AddUserModal } from "@/components/AddUserModal";
+import { supabase } from "@/integrations/supabase/client";
 
 const UserManagement = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const { users, userStats, loading, error, deleteUser } = useUsers();
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const { users, userStats, loading, error, deleteUser, refetch } = useUsers();
 
   const handleDeleteUser = async (userId: string, userEmail: string) => {
     try {
@@ -41,10 +46,37 @@ const UserManagement = () => {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: string, userEmail: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Role Updated",
+        description: `User ${userEmail} role changed to ${newRole}.`,
+      });
+      refetch();
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update user role. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "superadmin":
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200"><Shield className="h-3 w-3 mr-1" />Admin</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200"><Shield className="h-3 w-3 mr-1" />Super Admin</Badge>;
+      case "limited_admin":
+        return <Badge className="bg-purple-100 text-purple-800 border-purple-200"><Shield className="h-3 w-3 mr-1" />Admin</Badge>;
+      case "legal":
+        return <Badge className="bg-orange-100 text-orange-800 border-orange-200"><UserCheck className="h-3 w-3 mr-1" />Legal</Badge>;
       case "vendor":
         return <Badge className="bg-green-100 text-green-800 border-green-200"><Building className="h-3 w-3 mr-1" />Vendor</Badge>;
       default:
@@ -97,6 +129,10 @@ const UserManagement = () => {
                 <p className="text-muted-foreground">Manage user accounts and permissions</p>
               </div>
             </div>
+            <Button onClick={() => setIsAddUserModalOpen(true)} className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Add User
+            </Button>
           </div>
         </div>
       </div>
@@ -189,7 +225,19 @@ const UserManagement = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">{user.email}</TableCell>
-                      <TableCell>{getRoleBadge(user.role)}</TableCell>
+                      <TableCell>
+                        <Select value={user.role} onValueChange={(value) => handleRoleChange(user.id, value, user.email)}>
+                          <SelectTrigger className="w-32">
+                            <SelectValue>{getRoleBadge(user.role)}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="vendor">Vendor</SelectItem>
+                            <SelectItem value="limited_admin">Admin</SelectItem>
+                            <SelectItem value="legal">Legal</SelectItem>
+                            {user.role === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell className="text-sm">{user.company || '—'}</TableCell>
                       <TableCell className="text-sm">
                         {new Date(user.created_at).toLocaleDateString()}
@@ -312,6 +360,12 @@ const UserManagement = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AddUserModal 
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        onUserAdded={refetch}
+      />
     </div>
   );
 };
