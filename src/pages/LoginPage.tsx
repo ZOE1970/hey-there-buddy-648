@@ -139,35 +139,6 @@ const LoginPage = () => {
     }
   };
 
-  // Create user profile if it doesn't exist
-  const createUserProfile = async (userId: string, email: string, additionalData?: any) => {
-    try {
-      const profileData = { 
-        id: userId, 
-        email: email,
-        role: 'vendor',
-        first_name: additionalData?.firstName || formData.firstName || '',
-        last_name: additionalData?.lastName || formData.lastName || '',
-        phone: additionalData?.phone || formData.phone || '',
-        company: additionalData?.company || formData.company || '',
-        avatar_url: additionalData?.avatar_url || null,
-        created_at: new Date().toISOString()
-      };
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([profileData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error creating profile:', error);
-      throw error;
-    }
-  };
-
   // Safe profile fetch that handles empty results
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -203,6 +174,43 @@ const LoginPage = () => {
     checkUser();
   }, []);
 
+  // Create user profile if it doesn't exist
+  const createUserProfile = async (userId: string, email: string, additionalData?: any) => {
+    try {
+      // Determine role based on email
+      let role = 'vendor'; // default
+      if (email === 'dpo@run.edu.ng') {
+        role = 'superadmin';
+      } else if (['legal@run.edu.ng', 'vc@run.edu.ng', 'councilaffairs@run.edu.ng', 'registrar@run.edu.ng'].includes(email)) {
+        role = 'legal';
+      }
+
+      const profileData = { 
+        id: userId, 
+        email: email,
+        role: role, // Use the determined role instead of hardcoded 'vendor'
+        first_name: additionalData?.firstName || formData.firstName || '',
+        last_name: additionalData?.lastName || formData.lastName || '',
+        phone: additionalData?.phone || formData.phone || '',
+        company: additionalData?.company || formData.company || '',
+        avatar_url: additionalData?.avatar_url || null,
+        created_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([profileData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      throw error;
+    }
+  };
+
   const redirectBasedOnRole = async (userId: string, userEmail: string) => {
     try {
       const { profile, error: profileError } = await fetchUserProfile(userId);
@@ -216,9 +224,10 @@ const LoginPage = () => {
       if (!profile) {
         try {
           const newProfile = await createUserProfile(userId, userEmail);
+          // Redirect based on the newly created profile's role
           if (newProfile?.role === 'superadmin') {
             navigate('/admin/dashboard');
-          } else if (['legal@run.edu.ng','vc@run.edu.ng','councilaffairs@run.edu.ng','registrar@run.edu.ng'].includes(userEmail)) {
+          } else if (newProfile?.role === 'legal') {
             navigate('/legal/dashboard');
           } else {
             navigate('/vendor/dashboard');
@@ -230,7 +239,8 @@ const LoginPage = () => {
         return;
       }
 
-      if (profile?.role === 'superadmin') {
+      // Handle existing profile - check for superadmin first
+      if (profile?.role === 'superadmin' || userEmail === 'dpo@run.edu.ng') {
         navigate('/admin/dashboard');
       } else if (profile?.role === 'legal' || ['legal@run.edu.ng','vc@run.edu.ng','councilaffairs@run.edu.ng','registrar@run.edu.ng'].includes(userEmail)) {
         navigate('/legal/dashboard');
@@ -818,7 +828,7 @@ const LoginPage = () => {
                 </div>
                 {errors.confirmPassword && (
                   <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-                    <AlertCircle className="h-3 w-3" /> {errors.confirmPassword}
+                    <AlertCircle className="h-3 w-3" /> {errors.conf confirmPassword}
                   </p>
                 )}
               </div>
