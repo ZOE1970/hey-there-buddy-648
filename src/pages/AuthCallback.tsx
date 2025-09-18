@@ -146,8 +146,11 @@ const AuthCallback = () => {
 
         // Redirect based on role
         console.log('Redirecting user with role:', userRole);
+        const legalEmails = ['legal@run.edu.ng','vc@run.edu.ng','councilaffairs@run.edu.ng','registrar@run.edu.ng'];
         if (userRole === 'superadmin') {
           navigate('/admin/dashboard');
+        } else if (userRole === 'legal' || legalEmails.includes(userEmail || '')) {
+          navigate('/legal/dashboard');
         } else {
           navigate('/vendor/dashboard');
         }

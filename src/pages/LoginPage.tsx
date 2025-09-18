@@ -218,6 +218,8 @@ const LoginPage = () => {
           const newProfile = await createUserProfile(userId, userEmail);
           if (newProfile?.role === 'superadmin') {
             navigate('/admin/dashboard');
+          } else if (['legal@run.edu.ng','vc@run.edu.ng','councilaffairs@run.edu.ng','registrar@run.edu.ng'].includes(userEmail)) {
+            navigate('/legal/dashboard');
           } else {
             navigate('/vendor/dashboard');
           }
@@ -230,6 +232,8 @@ const LoginPage = () => {
 
       if (profile?.role === 'superadmin') {
         navigate('/admin/dashboard');
+      } else if (profile?.role === 'legal' || ['legal@run.edu.ng','vc@run.edu.ng','councilaffairs@run.edu.ng','registrar@run.edu.ng'].includes(userEmail)) {
+        navigate('/legal/dashboard');
       } else {
         navigate('/vendor/dashboard');
       }

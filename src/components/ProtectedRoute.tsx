@@ -24,6 +24,13 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         // If role is required, check user role
         if (requiredRole) {
           try {
+            const legalEmails = [
+              'legal@run.edu.ng',
+              'vc@run.edu.ng',
+              'councilaffairs@run.edu.ng',
+              'registrar@run.edu.ng'
+            ];
+
             const { data: profile, error } = await supabase
               .from('profiles')
               .select('role')
@@ -33,21 +40,27 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
             // Handle RLS recursion error - default to vendor role
             if (error?.code === '42P17') {
               console.warn('RLS recursion detected, assuming vendor role');
-              if (requiredRole !== 'vendor') {
+              if (requiredRole !== 'vendor' && !(requiredRole === 'legal' && legalEmails.includes(session.user.email!))) {
                 navigate('/login');
                 return;
               }
             } else if (error || (requiredRole !== 'vendor' && 
               !(profile?.role === 'superadmin' || 
                 profile?.role === 'limited_admin' || 
-                (requiredRole === 'legal' && (profile?.role === 'legal' || session.user.email === 'legal@run.edu.ng'))))) {
+                (requiredRole === 'legal' && (profile?.role === 'legal' || legalEmails.includes(session.user.email!)))))) {
               navigate('/login');
               return;
             }
           } catch (err) {
             console.error('Profile check error:', err);
-            // Default to vendor for any profile fetch errors
-            if (requiredRole !== 'vendor') {
+            // Default to vendor for any profile fetch errors (allow email-based legal access)
+            const legalEmails = [
+              'legal@run.edu.ng',
+              'vc@run.edu.ng',
+              'councilaffairs@run.edu.ng',
+              'registrar@run.edu.ng'
+            ];
+            if (requiredRole !== 'vendor' && !(requiredRole === 'legal' && legalEmails.includes(session.user.email!))) {
               navigate('/login');
               return;
             }

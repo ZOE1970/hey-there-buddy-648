@@ -22,7 +22,7 @@ const Landing = () => {
 
         if (profile?.role === 'superadmin' || profile?.role === 'limited_admin') {
           navigate('/admin/dashboard');
-        } else if (profile?.role === 'legal') {
+        } else if (profile?.role === 'legal' || ['legal@run.edu.ng','vc@run.edu.ng','councilaffairs@run.edu.ng','registrar@run.edu.ng'].includes(session.user.email || '')) {
           navigate('/legal/dashboard');
         } else {
           navigate('/vendor/dashboard');
