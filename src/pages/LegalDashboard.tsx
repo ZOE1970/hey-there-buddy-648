@@ -37,11 +37,13 @@ const LegalDashboard = () => {
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);
-        return;
+        // Still redirect to landing page even if there's an error
       }
-      navigate('/login');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, redirect to landing page
+      navigate('/');
     }
   };
 

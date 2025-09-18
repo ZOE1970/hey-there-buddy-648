@@ -47,13 +47,13 @@ const AdminDashboard = () => {
       localStorage.removeItem('supabase.auth.token');
       localStorage.clear();
       
-      // Always navigate to login regardless of logout success/failure
-      navigate('/login');
+      // Always navigate to landing page regardless of logout success/failure
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
-      // Force navigation to login even if logout fails
+      // Force navigation to landing page even if logout fails
       localStorage.clear();
-      navigate('/login');
+      navigate('/');
     }
   };
 
