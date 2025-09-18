@@ -76,6 +76,11 @@ const AppContent = () => {
               <LegalDashboard />
             </ProtectedRoute>
           } />
+          <Route path="/legal/review/:vendorSlug" element={
+            <ProtectedRoute requiredRole="legal">
+              <AdminReview />
+            </ProtectedRoute>
+          } />
           
           {/* Public Routes */}
           <Route path="/auth/callback" element={<AuthCallback />} />

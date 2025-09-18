@@ -37,17 +37,16 @@ export const useUsers = () => {
 
       setUsers(usersData || []);
 
-      // Fetch user stats
-      const { data: statsData, error: statsError } = await supabase
-        .from('user_stats')
-        .select('*')
-        .maybeSingle();
-
-      if (statsError && statsError.code !== 'PGRST116') {
-        console.warn('Could not fetch user stats:', statsError);
-      } else if (statsData) {
-        setUserStats(statsData);
-      }
+      // Calculate basic stats from users data
+      const vendorCount = usersData?.filter(u => u.role === 'vendor').length || 0;
+      const adminCount = usersData?.filter(u => ['superadmin', 'limited_admin'].includes(u.role)).length || 0;
+      const legalCount = usersData?.filter(u => u.role === 'legal').length || 0;
+      
+      setUserStats({
+        total_users: usersData?.length || 0,
+        vendor_count: vendorCount,
+        admin_count: adminCount + legalCount
+      });
 
     } catch (err) {
       console.error('Error fetching users:', err);

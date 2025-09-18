@@ -22,6 +22,8 @@ const Landing = () => {
 
         if (profile?.role === 'superadmin' || profile?.role === 'limited_admin') {
           navigate('/admin/dashboard');
+        } else if (profile?.role === 'legal') {
+          navigate('/legal/dashboard');
         } else {
           navigate('/vendor/dashboard');
         }

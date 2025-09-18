@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface AuthUser {
   id: string;
   email: string;
-  role: 'vendor' | 'superadmin' | 'limited_admin';
+  role: 'vendor' | 'superadmin' | 'limited_admin' | 'legal';
   first_name?: string;
   last_name?: string;
   company?: string;
@@ -30,7 +30,7 @@ export const useAuth = () => {
             setUser({
               id: profile.id,
               email: profile.email,
-              role: profile.role as 'vendor' | 'superadmin' | 'limited_admin',
+              role: profile.role as 'vendor' | 'superadmin' | 'limited_admin' | 'legal',
               first_name: profile.first_name,
               last_name: profile.last_name,
               company: profile.company
@@ -63,13 +63,15 @@ export const useAuth = () => {
     
     switch (permission) {
       case 'download_data':
-        return user.role === 'superadmin';
+        return user.role === 'superadmin' || user.role === 'legal';
       case 'approve_forms':
         return user.role === 'superadmin';
       case 'view_all':
-        return user.role === 'superadmin' || user.role === 'limited_admin';
+        return user.role === 'superadmin' || user.role === 'limited_admin' || user.role === 'legal';
       case 'manage_users':
         return user.role === 'superadmin';
+      case 'print_certificate':
+        return user.role === 'superadmin' || user.role === 'legal';
       default:
         return false;
     }
@@ -81,6 +83,7 @@ export const useAuth = () => {
     hasPermission,
     isAdmin: user?.role === 'superadmin' || user?.role === 'limited_admin',
     isSuperAdmin: user?.role === 'superadmin',
-    isLimitedAdmin: user?.role === 'limited_admin'
+    isLimitedAdmin: user?.role === 'limited_admin',
+    isLegal: user?.role === 'legal'
   };
 };
