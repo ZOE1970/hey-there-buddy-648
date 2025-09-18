@@ -4,6 +4,7 @@ import { Download, ArrowLeft, CheckCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import cdpoCertificate from "@/assets/cdpo-logo-nobg.png";
+import universityLogo from "@/assets/redeemers-university-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CertificateData {
@@ -126,64 +127,301 @@ const CertificateViewer = () => {
   const handleDownload = () => {
     if (!certificate) return;
     
-    // Generate PDF download
-    const printWindow = window.open('', '_blank');
-    const certificateContent = document.querySelector('.certificate-content');
+    // Create a new window with the certificate content for PDF generation
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
     
-    if (printWindow && certificateContent) {
+    if (printWindow) {
       printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
           <head>
             <title>Certificate - ${certificate.certificateNumber}</title>
+            <meta charset="utf-8">
             <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              
               body { 
                 font-family: 'Times New Roman', serif; 
                 margin: 0; 
                 padding: 20px;
                 color: #1a1a1a;
                 background: white;
-                line-height: 1.5;
+                line-height: 1.6;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
               }
-              .certificate-content { 
-                max-width: 800px; 
+              
+              .certificate-container { 
+                max-width: 210mm;
+                min-height: 297mm;
                 margin: 0 auto; 
-                padding: 60px;
+                padding: 40px;
                 border: 3px solid #2563eb;
                 border-radius: 12px;
                 background: #ffffff;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                page-break-inside: avoid;
               }
-              .text-center { text-align: center; }
-              .mb-8 { margin-bottom: 2rem; }
-              .mb-4 { margin-bottom: 1rem; }
-              .mb-2 { margin-bottom: 0.5rem; }
-              .grid { display: grid; gap: 1.5rem; }
-              .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-              .font-bold { font-weight: bold; }
-              .text-lg { font-size: 1.125rem; }
-              .text-xl { font-size: 1.25rem; }
-              .text-2xl { font-size: 1.5rem; }
-              .text-3xl { font-size: 1.875rem; }
-              .text-sm { font-size: 0.875rem; }
-              .text-xs { font-size: 0.75rem; }
-              .border-t { border-top: 1px solid #e5e7eb; padding-top: 2rem; }
-              .uppercase { text-transform: uppercase; }
-              .tracking-wide { letter-spacing: 0.025em; }
-               img { max-width: 96px; height: auto; margin: 0 auto; }
-               .university-seal { width: 80px; height: 80px; }
-               .certificate-logo { width: 96px; height: 96px; }
-              @media print { 
-                body { margin: 0; } 
-                .certificate-content { border: none; }
+              
+              .university-header {
+                text-align: center;
+                margin-bottom: 2rem;
+              }
+              
+              .university-logo {
+                width: 80px;
+                height: 80px;
+                margin: 0 auto 1rem;
+                object-fit: contain;
+              }
+              
+              .university-title {
+                font-size: 2rem;
+                font-weight: bold;
+                color: #2563eb;
+                margin-bottom: 0.5rem;
+              }
+              
+              .university-subtitle {
+                font-size: 1.125rem;
+                color: #6b7280;
+                margin-bottom: 1rem;
+              }
+              
+              .divider {
+                width: 60px;
+                height: 3px;
+                background: #2563eb;
+                margin: 0 auto;
+                opacity: 0.3;
+              }
+              
+              .certificate-title {
+                text-align: center;
+                margin-bottom: 2rem;
+              }
+              
+              .certificate-title h2 {
+                font-size: 1.75rem;
+                font-weight: bold;
+                margin-bottom: 1rem;
+                letter-spacing: 0.025em;
+              }
+              
+              .certificate-description {
+                color: #6b7280;
+                font-size: 1rem;
+              }
+              
+              .details-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+                margin-bottom: 2rem;
+              }
+              
+              .detail-section {
+                margin-bottom: 1.5rem;
+              }
+              
+              .detail-label {
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+                margin-bottom: 0.25rem;
+              }
+              
+              .detail-value {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #1a1a1a;
+              }
+              
+              .compliance-box {
+                background: rgba(34, 197, 94, 0.05);
+                border: 1px solid rgba(34, 197, 94, 0.2);
+                border-radius: 8px;
+                padding: 1.5rem;
+                margin-bottom: 2rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.75rem;
+              }
+              
+              .signature-section {
+                border-top: 1px solid #e5e7eb;
+                padding-top: 2rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 2rem;
+              }
+              
+              .signature-left, .signature-right {
+                text-align: center;
+              }
+              
+              .signature-box {
+                width: 120px;
+                height: 60px;
+                background: rgba(0,0,0,0.05);
+                border: 2px dashed rgba(0,0,0,0.2);
+                border-radius: 4px;
+                margin-bottom: 0.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.75rem;
+                color: #6b7280;
+              }
+              
+              .seal-container {
+                width: 60px;
+                height: 60px;
+                background: rgba(37, 99, 235, 0.1);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px;
+                margin-bottom: 0.5rem;
+              }
+              
+              .seal-image {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+              }
+              
+              .footer-text {
+                text-align: center;
+                margin-top: 2rem;
+                padding-top: 1.5rem;
+                border-top: 1px solid #e5e7eb;
+                font-size: 0.75rem;
+                color: #6b7280;
+                line-height: 1.4;
+              }
+              
+              @media print {
+                body { 
+                  margin: 0;
+                  padding: 0;
+                  background: white;
+                }
+                
+                .certificate-container { 
+                  border: none;
+                  box-shadow: none;
+                  padding: 30px;
+                  margin: 0;
+                  width: 100%;
+                  max-width: none;
+                  min-height: auto;
+                }
+                
+                @page {
+                  size: A4;
+                  margin: 15mm;
+                }
               }
             </style>
           </head>
           <body>
-            ${certificateContent.outerHTML.replace(/class="[^"]*"/g, '')}
+            <div class="certificate-container">
+              <div class="university-header">
+                <img src="${universityLogo}" alt="Redeemer's University Logo" class="university-logo" />
+                <h1 class="university-title">Data Protection Office</h1>
+                <h2 class="university-subtitle">Redeemer's University</h2>
+                <div class="divider"></div>
+              </div>
+              
+              <div class="certificate-title">
+                <h2>THIRD-PARTY VENDOR COMPLIANCE CERTIFICATE</h2>
+                <p class="certificate-description">
+                  This certifies that the following vendor has successfully completed our data protection compliance review
+                </p>
+              </div>
+              
+              <div class="details-grid">
+                <div>
+                  <div class="detail-section">
+                    <div class="detail-label">Vendor Organization</div>
+                    <div class="detail-value">${certificate.vendorName}</div>
+                  </div>
+                  <div class="detail-section">
+                    <div class="detail-label">Service/Product</div>
+                    <div class="detail-value">${certificate.serviceName}</div>
+                  </div>
+                </div>
+                <div>
+                  <div class="detail-section">
+                    <div class="detail-label">Approval Date</div>
+                    <div class="detail-value">${new Date(certificate.approvalDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                  </div>
+                  <div class="detail-section">
+                    <div class="detail-label">Valid Until</div>
+                    <div class="detail-value">${new Date(certificate.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="details-grid">
+                <div class="detail-section">
+                  <div class="detail-label">Certificate Number</div>
+                  <div class="detail-value" style="font-family: monospace;">${certificate.certificateNumber}</div>
+                </div>
+                <div class="detail-section">
+                  <div class="detail-label">Risk Assessment</div>
+                  <div class="detail-value" style="color: #059669;">✓ ${certificate.riskLevel} Risk</div>
+                </div>
+              </div>
+              
+              <div class="compliance-box">
+                <div style="color: #059669; font-size: 1.5rem; margin-top: 2px;">✓</div>
+                <div>
+                  <h3 style="font-weight: 600; color: #059669; margin-bottom: 0.5rem;">Compliance Verified</h3>
+                  <p style="font-size: 0.875rem;">
+                    This vendor has demonstrated compliance with university data protection policies and procedures. 
+                    The vendor's security measures, data handling practices, and privacy controls have been reviewed 
+                    and approved by our compliance team.
+                  </p>
+                </div>
+              </div>
+              
+              <div class="signature-section">
+                <div class="signature-left">
+                  <div class="signature-box">Digital Signature</div>
+                  <div style="font-weight: 600; margin-bottom: 0.25rem;">${certificate.dpoName}</div>
+                  <div style="font-size: 0.875rem; color: #6b7280;">Data Protection Officer</div>
+                </div>
+                <div class="signature-right">
+                  <div class="seal-container">
+                    <img src="${universityLogo}" alt="University Seal" class="seal-image" />
+                  </div>
+                  <div style="font-size: 0.875rem; color: #6b7280;">University Seal</div>
+                </div>
+              </div>
+              
+              <div class="footer-text">
+                <p>This certificate is valid for one year from the approval date and may be subject to periodic review.</p>
+                <p style="margin-top: 0.25rem;">Data Protection Office • dpo@run.edu.ng</p>
+              </div>
+            </div>
+            
             <script>
               window.onload = function() {
-                window.print();
-                window.close();
+                setTimeout(() => {
+                  window.print();
+                  window.close();
+                }, 500);
               }
             </script>
           </body>
@@ -228,8 +466,9 @@ const CertificateViewer = () => {
             <CardContent className="p-12">
               {/* University Header */}
               <div className="text-center mb-8">
-                <img src={cdpoCertificate} alt="CDPO Certificate" className="h-32 w-32 mx-auto mb-4 object-contain drop-shadow-lg" />
+                <img src={universityLogo} alt="Redeemer's University Logo" className="h-24 w-24 mx-auto mb-4 object-contain drop-shadow-lg" />
                 <h1 className="text-3xl font-bold text-primary mb-2">Data Protection Office</h1>
+                <h2 className="text-lg text-muted-foreground mb-2">Redeemer's University</h2>
                 <div className="w-24 h-1 bg-primary/30 mx-auto"></div>
               </div>
 
@@ -320,12 +559,12 @@ const CertificateViewer = () => {
                     <p className="font-semibold text-foreground">{certificate.dpoName}</p>
                     <p className="text-sm text-muted-foreground">Data Protection Officer</p>
                   </div>
-                  <div className="text-center md:text-right">
-                   <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2 p-2">
-                     <img src={cdpoCertificate} alt="University Seal" className="h-full w-full object-contain drop-shadow-md" />
+                   <div className="text-center md:text-right">
+                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2 p-2">
+                      <img src={universityLogo} alt="University Seal" className="h-full w-full object-contain drop-shadow-md" />
+                    </div>
+                     <p className="text-sm text-muted-foreground">University Seal</p>
                    </div>
-                    <p className="text-sm text-muted-foreground">University Seal</p>
-                  </div>
                 </div>
               </div>
 

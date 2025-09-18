@@ -91,7 +91,13 @@ const AppContent = () => {
           
           {/* Public Routes */}
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/certificate/:id" element={<CertificateViewer />} />
+          
+          {/* Certificate Routes - Accessible by all authenticated users */}
+          <Route path="/certificate/:id" element={
+            <ProtectedRoute>
+              <CertificateViewer />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
