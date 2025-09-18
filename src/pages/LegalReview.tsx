@@ -107,7 +107,7 @@ const LegalReview = () => {
     setDownloading(true);
     try {
       // Navigate to certificate viewer which will handle the download/printing
-      window.open(`/certificate/${submission.certificate_number}`, '_blank');
+      window.open(`/certificate/${submission.id}`, '_blank');
       
       toast({
         title: "Certificate Opened",

@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import cdpoCertificate from "@/assets/cdpo-logo-nobg.png";
 import universityLogo from "@/assets/redeemers-university-logo.png";
+import dpoSeal from "@/assets/run-seal.png";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CertificateData {
@@ -157,9 +158,9 @@ const CertificateViewer = () => {
               
               .certificate-container { 
                 max-width: 210mm;
-                min-height: 297mm;
+                min-height: auto;
                 margin: 0 auto; 
-                padding: 40px;
+                padding: 30px;
                 border: 3px solid #2563eb;
                 border-radius: 12px;
                 background: #ffffff;
@@ -286,7 +287,6 @@ const CertificateViewer = () => {
                 width: 60px;
                 height: 60px;
                 background: rgba(37, 99, 235, 0.1);
-                border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -404,9 +404,9 @@ const CertificateViewer = () => {
                 </div>
                 <div class="signature-right">
                   <div class="seal-container">
-                    <img src="${universityLogo}" alt="University Seal" class="seal-image" />
+                    <img src="${dpoSeal}" alt="DPO Seal" class="seal-image" />
                   </div>
-                  <div style="font-size: 0.875rem; color: #6b7280;">University Seal</div>
+                  <div style="font-size: 0.875rem; color: #6b7280;">DPO Seal</div>
                 </div>
               </div>
               
@@ -466,7 +466,7 @@ const CertificateViewer = () => {
             <CardContent className="p-12">
               {/* University Header */}
               <div className="text-center mb-8">
-                <img src={universityLogo} alt="Redeemer's University Logo" className="h-24 w-24 mx-auto mb-4 object-contain drop-shadow-lg" />
+                <img src={universityLogo} alt="Redeemer's University Logo" className="h-32 w-32 mx-auto mb-4 object-contain drop-shadow-lg" />
                 <h1 className="text-3xl font-bold text-primary mb-2">Data Protection Office</h1>
                 <h2 className="text-lg text-muted-foreground mb-2">Redeemer's University</h2>
                 <div className="w-24 h-1 bg-primary/30 mx-auto"></div>
@@ -560,11 +560,11 @@ const CertificateViewer = () => {
                     <p className="text-sm text-muted-foreground">Data Protection Officer</p>
                   </div>
                    <div className="text-center md:text-right">
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-2 p-2">
-                      <img src={universityLogo} alt="University Seal" className="h-full w-full object-contain drop-shadow-md" />
+                     <div className="w-20 h-20 bg-primary/10 flex items-center justify-center mb-2 p-2">
+                       <img src={dpoSeal} alt="DPO Seal" className="h-full w-full object-contain drop-shadow-md" />
+                     </div>
+                      <p className="text-sm text-muted-foreground">DPO Seal</p>
                     </div>
-                     <p className="text-sm text-muted-foreground">University Seal</p>
-                   </div>
                 </div>
               </div>
 

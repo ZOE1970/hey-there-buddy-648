@@ -23,7 +23,7 @@ const Landing = () => {
             Vendor Data Protection Compliance Portal
           </h1>
           <p className="text-base md:text-xl text-primary-foreground/80 max-w-2xl mx-auto px-4">
-            Streamline your third-party vendor compliance process with our comprehensive data protection checklist system.
+            Third-Party Vendor Comprehensive Data Protection System.
           </p>
         </div>
 

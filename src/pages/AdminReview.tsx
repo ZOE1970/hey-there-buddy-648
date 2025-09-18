@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, FileText } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, FileText, Download } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -249,10 +249,22 @@ const AdminReview = () => {
                 <p className="text-muted-foreground">{submission.vendor_name} - {submission.service_name}</p>
               </div>
             </div>
-            <Badge variant="secondary">
-              <FileText className="h-3 w-3 mr-1" />
-              {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">
+                <FileText className="h-3 w-3 mr-1" />
+                {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+              </Badge>
+              {submission.status === 'approved' && submission.certificate_number && (
+                <Button 
+                  onClick={() => window.open(`/certificate/${submission.id}`, '_blank')}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  View Certificate
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
