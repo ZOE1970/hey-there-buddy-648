@@ -90,10 +90,20 @@ const AuthCallback = () => {
             // Get user data from auth
             const { data: { user }, error: userError } = await supabase.auth.getUser();
             
+            // Determine role based on email or other criteria
+            let newUserRole = 'vendor';
+            const email = userEmail || user?.email || '';
+            
+            // Check if this email should be a superadmin (you can customize this logic)
+            // For example, specific email domains or addresses
+            if (email === 'admin@redeemer.ca' || email.endsWith('@admin.redeemer.ca')) {
+              newUserRole = 'superadmin';
+            }
+            
             const profileData = {
               id: userId,
-              email: userEmail || user?.email || '',
-              role: 'vendor',
+              email: email,
+              role: newUserRole,
               first_name: user?.user_metadata?.first_name || user?.user_metadata?.given_name || '',
               last_name: user?.user_metadata?.last_name || user?.user_metadata?.family_name || '',
               avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null,
