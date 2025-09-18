@@ -120,7 +120,7 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Welcome {user?.first_name || user?.email || 'User'}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Welcome {user?.role === 'superadmin' ? 'Data Protection Officer' : (user?.first_name || user?.email || 'User')}</h1>
               <p className="text-muted-foreground mt-1 text-sm sm:text-base">Review and manage vendor compliance submissions</p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">

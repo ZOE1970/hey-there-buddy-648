@@ -123,7 +123,7 @@ const LegalDashboard = () => {
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
                 <Scale className="h-6 w-6 text-primary" />
-                Welcome {user?.first_name || user?.email || 'User'}
+                Welcome {user?.role === 'superadmin' ? 'Data Protection Officer' : (user?.first_name || user?.email || 'User')}
               </h1>
               <p className="text-muted-foreground mt-1 text-sm sm:text-base">Review vendor compliance submissions for legal assessment</p>
             </div>
