@@ -33,14 +33,26 @@ const AdminDashboard = () => {
 
   const handleLogout = async () => {
     try {
+      // Try to sign out with Supabase
       const { error } = await supabase.auth.signOut();
-      if (error) {
+      
+      // Even if there's an error, clear local storage and navigate
+      // This handles cases where the session is already invalid
+      if (error && error.message !== 'Auth session missing!') {
         console.error('Error signing out:', error);
-        return;
       }
+      
+      // Clear any remaining auth data from local storage
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.clear();
+      
+      // Always navigate to login regardless of logout success/failure
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
+      // Force navigation to login even if logout fails
+      localStorage.clear();
+      navigate('/login');
     }
   };
 
