@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+
+// Page imports
 import Landing from "./pages/Landing";
 import LoginPage from "./pages/LoginPage";
 import VendorDashboard from "./pages/VendorDashboard";
@@ -16,6 +18,8 @@ import CertificateViewer from "./pages/CertificateViewer";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import LegalDashboard from "./pages/LegalDashboard";
+
+// Component imports
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import Footer from "./components/Footer";
@@ -25,7 +29,7 @@ const queryClient = new QueryClient();
 // Component to conditionally render the footer
 const AppContent = () => {
   const location = useLocation();
-  const hideFooterPaths = ['/login']; // Add signup path if needed
+  const hideFooterPaths = ['/login'];
   const shouldShowFooter = !hideFooterPaths.includes(location.pathname);
 
   return (
@@ -54,7 +58,7 @@ const AppContent = () => {
             </ProtectedRoute>
           } />
           
-          {/* Protected Superadmin Routes */}
+          {/* Protected Admin Routes */}
           <Route path="/admin/dashboard" element={
             <ProtectedRoute requiredRole="superadmin">
               <AdminDashboard />
@@ -77,11 +81,11 @@ const AppContent = () => {
               <LegalDashboard />
             </ProtectedRoute>
           } />
-           <Route path="/legal/review/:vendorSlug" element={
-             <ProtectedRoute requiredRole="legal">
-               <LegalReview />
-             </ProtectedRoute>
-           } />
+          <Route path="/legal/review/:vendorSlug" element={
+            <ProtectedRoute requiredRole="legal">
+              <LegalReview />
+            </ProtectedRoute>
+          } />
           
           {/* Public Routes */}
           <Route path="/auth/callback" element={<AuthCallback />} />
